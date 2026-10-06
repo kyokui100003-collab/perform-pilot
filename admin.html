@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PERFORM 管理者ページ</title>
+<script src="config.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', sans-serif; background: #f0f4f8; color: #2d3748; min-height: 100vh; padding-bottom: 48px; }
+  header { background: #2c3e50; color: white; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
+  .logo { font-size: 20px; font-weight: 900; letter-spacing: 2px; } .logo span { color: #2ab5a8; }
+  .user-info { font-size: 12px; opacity: .9; margin-top: 3px; }
+  .role-badge { display: inline-block; background: #d98e30; border-radius: 4px; padding: 1px 7px; font-size: 11px; font-weight: 700; margin-right: 6px; }
+  .hbtn { background: rgba(255,255,255,.2); border: none; color: white; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; white-space: nowrap; margin-left: 6px; }
+  .tab-bar { background: #1a2c3d; display: flex; padding: 0 16px; position: sticky; top: 0; z-index: 20; overflow-x: auto; }
+  .tab-btn { background: none; border: none; color: rgba(255,255,255,.6); padding: 12px 20px; font-size: 14px; font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; font-family: inherit; }
+  .tab-btn.active { color: white; border-bottom-color: #63b3ed; }
+  .wrap { max-width: 1400px; margin: 0 auto; padding: 16px; }
+  .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+  .toolbar select, .toolbar input { padding: 8px 10px; border: 1.5px solid #cbd5e0; border-radius: 8px; font-size: 14px; background: white; font-family: inherit; }
+  .btn { background: #2ab5a8; color: white; border: none; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .btn.sub { background: white; color: #2c3e50; border: 1.5px solid #cbd5e0; }
+  .meta { font-size: 12px; color: #718096; margin-left: auto; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .card { background: white; border-radius: 10px; padding: 12px 14px; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+  .card .k { font-size: 11px; color: #718096; font-weight: 700; } .card .v { font-size: 22px; font-weight: 800; margin-top: 2px; } .card .s { font-size: 11px; color: #a0aec0; }
+  .tbl-box { background: white; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.06); overflow: auto; max-height: 68vh; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { padding: 8px 10px; border-bottom: 1px solid #edf2f7; white-space: nowrap; text-align: left; }
+  th { position: sticky; top: 0; background: #f7fafc; font-size: 12px; color: #4a5568; cursor: pointer; user-select: none; z-index: 2; }
+  th:hover { background: #edf2f7; }
+  td.n, th.n { text-align: right; }
+  tr.total td { font-weight: 800; background: #f7fafc; position: sticky; bottom: 0; }
+  .pct { font-weight: 700; } .pct small { color: #a0aec0; font-weight: 400; }
+  .lo { color: #c53030; } .mid { color: #b7791f; } .hi { color: #2f855a; }
+  .st { display: inline-block; border-radius: 99px; padding: 1px 9px; font-size: 11px; font-weight: 700; }
+  .st-draft { background: #edf2f7; color: #4a5568; } .st-pending { background: #fefcbf; color: #744210; } .st-reviewed { background: #c6f6d5; color: #22543d; }
+  details { background: white; border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; font-size: 12.5px; color: #4a5568; line-height: 1.7; }
+  summary { cursor: pointer; font-weight: 700; }
+  .loading, .err { padding: 40px; text-align: center; color: #718096; } .err { color: #c53030; }
+  .panel { display: none; } .panel.active { display: block; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="logo">PER<span>FORM</span></div>
+    <div class="user-info"><span class="role-badge">管理者</span><span id="who"></span></div>
+  </div>
+  <div><button class="hbtn" onclick="load()">↻ 更新</button><button class="hbtn" onclick="logout()">ログアウト</button></div>
+</header>
+<div class="tab-bar">
+  <button class="tab-btn active" id="tb-fac"   onclick="tab('fac')">施設別</button>
+  <button class="tab-btn"        id="tb-usr"   onclick="tab('usr')">ユーザー別</button>
+  <button class="tab-btn"        id="tb-case"  onclick="tab('case')">症例一覧</button>
+</div>
+<div class="wrap">
+  <details>
+    <summary>指標の定義</summary>
+    症例数＝作成された症例の総数（下書き・評価待ち・評価完了の合計）。<br>
+    相互評価完了率＝評価完了 ÷ 症例数（学習者・指導医の両方の入力が済んだ割合）。<br>
+    学習者自己評価入力率＝（評価待ち＋評価完了）÷ 症例数。　指導医評価入力率＝評価完了 ÷（評価待ち＋評価完了）。<br>
+    術前目標入力率＝術前目標のある症例 ÷ 症例数。<br>
+    学習者コメント入力率＝「良かった点／次回の目標」のどちらかを入力した症例 ÷ 学習者が提出した症例。　指導医コメント入力率＝同様に、評価完了した症例のうち指導医がコメントを入力した割合。<br>
+    ディスカッション＝フィードバックへの追加コメントの件数。　評価所要日数＝学習者の提出から指導医の評価完了までの平均日数。
+  </details>
+
+  <div id="msg" class="loading">読み込み中...</div>
+
+  <div id="panel-fac" class="panel active">
+    <div class="cards" id="cards"></div>
+    <div class="toolbar"><button class="btn" onclick="csv('fac')">⬇ CSV（施設別）</button><span class="meta" id="metaFac"></span></div>
+    <div class="tbl-box"><table id="tblFac"></table></div>
+  </div>
+
+  <div id="panel-usr" class="panel">
+    <div class="toolbar">
+      <select id="fUsrFac" onchange="renderUsr()"></select>
+      <select id="fUsrRole" onchange="renderUsr()"><option value="">役割：すべて</option><option value="learner">学習者</option><option value="evaluator">指導医</option></select>
+      <button class="btn" onclick="csv('usr')">⬇ CSV（ユーザー別）</button>
+    </div>
+    <div class="tbl-box"><table id="tblUsr"></table></div>
+  </div>
+
+  <div id="panel-case" class="panel">
+    <div class="toolbar">
+      <select id="fCaseFac" onchange="renderCase()"></select>
+      <select id="fCaseSt" onchange="renderCase()"><option value="">状態：すべて</option><option value="draft">下書き</option><option value="pending">評価待ち</option><option value="reviewed">評価完了</option></select>
+      <input id="fCaseQ" placeholder="術式で検索" oninput="renderCase()">
+      <button class="btn" onclick="csv('case')">⬇ CSV（症例一覧・全項目）</button>
+      <span class="meta" id="metaCase"></span>
+    </div>
+    <div class="tbl-box"><table id="tblCase"></table></div>
+  </div>
+</div>
+
+<script>
+const GAS_URL = window.PERFORM_CONFIG.GAS_URL;
+const role = sessionStorage.getItem('role'), userId = sessionStorage.getItem('userId'),
+      userName = sessionStorage.getItem('userName'), facilityCode = sessionStorage.getItem('facilityCode'),
+      pin = sessionStorage.getItem('pin');
+if (role !== 'admin' || !userId) location.href = 'index.html';
+document.getElementById('who').textContent = userName || '';
+function logout() { sessionStorage.clear(); location.href = 'index.html'; }
+
+let D = null;                       // サーバーから取得した全データ
+const sortState = { fac: null, usr: null, case: null };
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const STJ = { draft: '下書き', pending: '評価待ち', reviewed: '評価完了' };
+
+async function gasCall(data) {
+  const res = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(data) });
+  return res.json();
+}
+async function load() {
+  const m = document.getElementById('msg'); m.className = 'loading'; m.textContent = '読み込み中...'; m.style.display = 'block';
+  try {
+    const res = await gasCall({ action: 'getAdminOverview', facilityCode, userId, pin });
+    if (!res.success) { m.className = 'err'; m.textContent = res.error || '取得に失敗しました'; return; }
+    D = res; m.style.display = 'none';
+    fillFacilitySelects(); renderFac(); renderUsr(); renderCase();
+  } catch (e) { m.className = 'err'; m.textContent = '接続エラー。しばらくしてから再試行してください。'; }
+}
+function fillFacilitySelects() {
+  const opts = '<option value="">施設：すべて</option>' + D.facilities.map(f => `<option value="${esc(f.facilityCode)}">${esc(f.facilityCode)} ${esc(f.facilityName)}</option>`).join('');
+  ['fUsrFac', 'fCaseFac'].forEach(id => { const el = document.getElementById(id); const v = el.value; el.innerHTML = opts; el.value = v; });
+}
+function tab(t) {
+  ['fac', 'usr', 'case'].forEach(k => {
+    document.getElementById('tb-' + k).classList.toggle('active', k === t);
+    document.getElementById('panel-' + k).classList.toggle('active', k === t);
+  });
+}
+
+// ---------- 共通：率の表示と並べ替え ----------
+const rate = (a, b) => b > 0 ? a / b : null;
+function pct(a, b) {
+  const r = rate(a, b);
+  if (r === null) return '<span style="color:#cbd5e0">–</span>';
+  const cls = r >= 0.8 ? 'hi' : r >= 0.5 ? 'mid' : 'lo';
+  return `<span class="pct ${cls}">${Math.round(r * 100)}%</span> <small>${a}/${b}</small>`;
+}
+const pctTxt = (a, b) => { const r = rate(a, b); return r === null ? '' : (Math.round(r * 1000) / 10); };
+function sortRows(key, rows, cols) {
+  const st = sortState[key]; if (!st) return rows;
+  const c = cols[st.i]; const dir = st.asc ? 1 : -1;
+  return rows.slice().sort((x, y) => {
+    const a = c.v(x), b = c.v(y);
+    if (a === '' || a == null) return 1; if (b === '' || b == null) return -1;
+    return (a > b ? 1 : a < b ? -1 : 0) * dir;
+  });
+}
+function setSort(key, i) {
+  const st = sortState[key];
+  sortState[key] = (st && st.i === i) ? { i, asc: !st.asc } : { i, asc: true };
+  ({ fac: renderFac, usr: renderUsr, case: renderCase })[key]();
+}
+function table(el, key, cols, rows, totalRow) {
+  const sorted = sortRows(key, rows, cols);
+  const head = '<thead><tr>' + cols.map((c, i) => `<th class="${c.n ? 'n' : ''}" onclick="setSort('${key}',${i})">${esc(c.h)}${sortState[key] && sortState[key].i === i ? (sortState[key].asc ? ' ▲' : ' ▼') : ''}</th>`).join('') + '</tr></thead>';
+  const body = '<tbody>' + sorted.map(r => '<tr>' + cols.map(c => `<td class="${c.n ? 'n' : ''}">${c.html ? c.html(r) : esc(c.v(r))}</td>`).join('') + '</tr>').join('') + (totalRow || '') + '</tbody>';
+  document.getElementById(el).innerHTML = rows.length ? head + body : '<tbody><tr><td style="padding:30px;color:#a0aec0">データがありません</td></tr></tbody>';
+}
+
+// ---------- 施設別 ----------
+const sub = f => f.pending + f.reviewed;
+const FAC_COLS = [
+  { h: '施設コード', v: f => f.facilityCode },
+  { h: '施設名', v: f => f.facilityName },
+  { h: '学習者数', n: 1, v: f => f.learners },
+  { h: '指導医数', n: 1, v: f => f.evaluators },
+  { h: '症例数', n: 1, v: f => f.cases },
+  { h: '下書き', n: 1, v: f => f.draft },
+  { h: '評価待ち', n: 1, v: f => f.pending },
+  { h: '評価完了', n: 1, v: f => f.reviewed },
+  { h: '相互評価完了率', n: 1, v: f => rate(f.reviewed, f.cases), html: f => pct(f.reviewed, f.cases), csv: f => pctTxt(f.reviewed, f.cases) },
+  { h: '学習者自己評価入力率', n: 1, v: f => rate(sub(f), f.cases), html: f => pct(sub(f), f.cases), csv: f => pctTxt(sub(f), f.cases) },
+  { h: '指導医評価入力率', n: 1, v: f => rate(f.reviewed, sub(f)), html: f => pct(f.reviewed, sub(f)), csv: f => pctTxt(f.reviewed, sub(f)) },
+  { h: '術前目標入力率', n: 1, v: f => rate(f.preOpGoalN, f.cases), html: f => pct(f.preOpGoalN, f.cases), csv: f => pctTxt(f.preOpGoalN, f.cases) },
+  { h: '学習者コメント入力率', n: 1, v: f => rate(f.learnerCommentN, sub(f)), html: f => pct(f.learnerCommentN, sub(f)), csv: f => pctTxt(f.learnerCommentN, sub(f)) },
+  { h: '指導医コメント入力率', n: 1, v: f => rate(f.evaluatorCommentN, f.reviewed), html: f => pct(f.evaluatorCommentN, f.reviewed), csv: f => pctTxt(f.evaluatorCommentN, f.reviewed) },
+  { h: 'ディスカッション件数', n: 1, v: f => f.discussionN },
+  { h: '評価所要日数(平均)', n: 1, v: f => f.tatN ? Math.round(f.tatSum / f.tatN * 10) / 10 : '' },
+];
+function facTotal() {
+  const t = { facilityCode: '合計', facilityName: '', learners: 0, evaluators: 0, cases: 0, draft: 0, pending: 0, reviewed: 0, learnerCommentN: 0, evaluatorCommentN: 0, preOpGoalN: 0, discussionN: 0, tatSum: 0, tatN: 0 };
+  D.facilities.forEach(f => Object.keys(t).forEach(k => { if (typeof t[k] === 'number') t[k] += f[k]; }));
+  return t;
+}
+function renderFac() {
+  const T = facTotal();
+  const cd = (k, v, s) => `<div class="card"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s || ''}</div></div>`;
+  document.getElementById('cards').innerHTML =
+    cd('参加者', T.learners + T.evaluators, `学習者 ${T.learners}／指導医 ${T.evaluators}`) +
+    cd('症例数', T.cases, `下書き ${T.draft}／評価待ち ${T.pending}／完了 ${T.reviewed}`) +
+    cd('相互評価完了率', Math.round((rate(T.reviewed, T.cases) || 0) * 100) + '%', `${T.reviewed}/${T.cases}`) +
+    cd('学習者コメント入力率', Math.round((rate(T.learnerCommentN, sub(T)) || 0) * 100) + '%', `${T.learnerCommentN}/${sub(T)}`) +
+    cd('指導医コメント入力率', Math.round((rate(T.evaluatorCommentN, T.reviewed) || 0) * 100) + '%', `${T.evaluatorCommentN}/${T.reviewed}`);
+  const totalRow = '<tr class="total">' + FAC_COLS.map(c => `<td class="${c.n ? 'n' : ''}">${c.html ? c.html(T) : esc(c.v(T))}</td>`).join('') + '</tr>';
+  table('tblFac', 'fac', FAC_COLS, D.facilities, totalRow);
+  document.getElementById('metaFac').textContent = '更新：' + D.generatedAt + '　※見出しをクリックすると並べ替え';
+}
+
+// ---------- ユーザー別 ----------
+const ROLEJ = { learner: '学習者', evaluator: '指導医' };
+const USR_COLS = [
+  { h: '施設コード', v: u => u.facilityCode },
+  { h: '施設名', v: u => u.facilityName },
+  { h: '役割', v: u => ROLEJ[u.role] || u.role },
+  { h: '匿名ラベル', v: u => u.anonLabel },
+  { h: '氏名', v: u => u.name },
+  { h: 'ユーザーID', v: u => u.userId },
+  { h: '診療科', v: u => u.department },
+  { h: '登録日', v: u => u.registeredAt },
+  { h: '関与症例数', n: 1, v: u => u.role === 'learner' ? u.started : u.assigned },
+  { h: '提出済み', n: 1, v: u => u.role === 'learner' ? u.submitted : '' },
+  { h: '評価完了', n: 1, v: u => u.reviewed },
+  { h: '入力率', n: 1, v: u => u.role === 'learner' ? rate(u.submitted, u.started) : rate(u.reviewed, u.assigned),
+    html: u => u.role === 'learner' ? pct(u.submitted, u.started) : pct(u.reviewed, u.assigned),
+    csv: u => u.role === 'learner' ? pctTxt(u.submitted, u.started) : pctTxt(u.reviewed, u.assigned) },
+  { h: 'コメント入力数', n: 1, v: u => u.commentN },
+  { h: '最終活動日', v: u => u.lastActivity },
+];
+function usrFiltered() {
+  const f = document.getElementById('fUsrFac').value, r = document.getElementById('fUsrRole').value;
+  return D.users.filter(u => (!f || u.facilityCode === f) && (!r || u.role === r));
+}
+function renderUsr() { if (D) table('tblUsr', 'usr', USR_COLS, usrFiltered()); }
+
+// ---------- 症例一覧 ----------
+const CASE_COLS = [
+  { h: '施設コード', v: c => c.facilityCode },
+  { h: '症例No.', v: c => c.caseNo },
+  { h: '術式', v: c => c.procedure },
+  { h: '学習者', v: c => c.learnerLabel },
+  { h: '指導医', v: c => c.evaluatorLabel },
+  { h: '状態', v: c => STJ[c.status] || c.status, html: c => `<span class="st st-${esc(c.status)}">${esc(STJ[c.status] || c.status)}</span>` },
+  { h: '作成日', v: c => c.createdAt },
+  { h: '提出日', v: c => c.submittedAt },
+  { h: '評価日', v: c => c.reviewedAt },
+  { h: '術前目標', v: c => c.preOpGoal ? '○' : '' },
+  { h: '学習者コメント', v: c => (c.fbGoodL || c.fbGoalL) ? '○' : '' },
+  { h: '指導医コメント', v: c => (c.fbGoodE || c.fbGoalE) ? '○' : '' },
+  { h: 'ディスカッション', n: 1, v: c => c.discussionN },
+  { h: 'P(学習者)', n: 1, v: c => c.perfL }, { h: 'P(指導医)', n: 1, v: c => c.perfE },
+  { h: '自律度(学習者)', n: 1, v: c => c.autoL }, { h: '自律度(指導医)', n: 1, v: c => c.autoE },
+];
+function caseFiltered() {
+  const f = document.getElementById('fCaseFac').value, s = document.getElementById('fCaseSt').value, q = document.getElementById('fCaseQ').value.trim();
+  return D.cases.filter(c => (!f || c.facilityCode === f) && (!s || c.status === s) && (!q || String(c.procedure).includes(q)));
+}
+function renderCase() {
+  if (!D) return;
+  const rows = caseFiltered();
+  table('tblCase', 'case', CASE_COLS, rows);
+  document.getElementById('metaCase').textContent = rows.length + ' 件';
+}
+
+// ---------- CSV ----------
+function dl(name, rows) {
+  const e = v => { const s = String(v == null ? '' : v); return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const blob = new Blob(['﻿' + rows.map(r => r.map(e).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+const stamp = () => new Date().toISOString().slice(0, 10).replace(/-/g, '');
+function csv(t) {
+  if (!D) return;
+  if (t === 'fac') {
+    const rows = D.facilities.concat([facTotal()]);
+    dl(`PERFORM_施設別_${stamp()}.csv`, [FAC_COLS.map(c => c.h)].concat(rows.map(f => FAC_COLS.map(c => c.csv ? c.csv(f) : c.v(f)))));
+  } else if (t === 'usr') {
+    dl(`PERFORM_ユーザー別_${stamp()}.csv`, [USR_COLS.map(c => c.h)].concat(usrFiltered().map(u => USR_COLS.map(c => c.csv ? c.csv(u) : c.v(u)))));
+  } else {
+    const H = ['症例ID','施設コード','施設名','症例No.','術式','学習者(匿名)','指導医(匿名)','状態','作成日','提出日','評価日','術前目標',
+      '自律度(学習者)','パフォーマンス(学習者)','難易度(学習者)','TS1(学習者)','TS2(学習者)','TS3(学習者)','TS4(学習者)','TS5(学習者)','良かった点(学習者)','次回の目標・改善点(学習者)',
+      '自律度(指導医)','パフォーマンス(指導医)','難易度(指導医)','TS1(指導医)','TS2(指導医)','TS3(指導医)','TS4(指導医)','TS5(指導医)','良かった点(指導医)','次回の目標・改善点(指導医)','ディスカッション件数'];
+    dl(`PERFORM_症例一覧_${stamp()}.csv`, [H].concat(caseFiltered().map(c => [c.id, c.facilityCode, c.facilityName, c.caseNo, c.procedure, c.learnerLabel, c.evaluatorLabel, STJ[c.status] || c.status, c.createdAt, c.submittedAt, c.reviewedAt, c.preOpGoal,
+      c.autoL, c.perfL, c.diffL, c.ts1L, c.ts2L, c.ts3L, c.ts4L, c.ts5L, c.fbGoodL, c.fbGoalL, c.autoE, c.perfE, c.diffE, c.ts1E, c.ts2E, c.ts3E, c.ts4E, c.ts5E, c.fbGoodE, c.fbGoalE, c.discussionN])));
+  }
+}
+load();
+</script>
+</body>
+</html>

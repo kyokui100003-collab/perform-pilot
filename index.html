@@ -204,13 +204,15 @@ async function doLogin() {
   try {
     const res = await gasCall({ action: 'login', facilityCode, name, pin });
     if (!res.success) { showError(res.error || 'ログイン失敗'); return; }
-    if (res.role !== currentRole) {
+    // 管理者は「指導医」側のログイン画面から入る（施設コード ADMIN）
+    const adminOk = res.role === 'admin' && currentRole === 'evaluator';
+    if (res.role !== currentRole && !adminOk) {
       showError(`このアカウントは「${res.role === 'learner' ? '学習者' : '指導医'}」です`); return;
     }
 
     if (remember) {
       localStorage.setItem('perform_login', JSON.stringify({
-        role: res.role, facilityCode: res.facilityCode, name: res.name, pin
+        role: res.role === 'admin' ? 'evaluator' : res.role, facilityCode: res.facilityCode, name: res.name, pin
       }));
     } else {
       localStorage.removeItem('perform_login');
@@ -224,7 +226,7 @@ async function doLogin() {
     sessionStorage.setItem('department',   res.department   || '');
     sessionStorage.setItem('pin',          pin);
 
-    location.href = res.role === 'learner' ? 'learner.html' : 'evaluator.html';
+    location.href = res.role === 'admin' ? 'admin.html' : (res.role === 'learner' ? 'learner.html' : 'evaluator.html');
   } catch (e) {
     showError('接続エラー。しばらくしてから再試行してください。');
   } finally {
