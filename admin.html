@@ -63,7 +63,7 @@
     学習者自己評価入力率＝（評価待ち＋評価完了）÷ 症例数。　指導医評価入力率＝評価完了 ÷（評価待ち＋評価完了）。<br>
     術前目標入力率＝術前目標のある症例 ÷ 症例数。<br>
     学習者コメント入力率＝「良かった点／次回の目標」のどちらかを入力した症例 ÷ 学習者が提出した症例。　指導医コメント入力率＝同様に、評価完了した症例のうち指導医がコメントを入力した割合。<br>
-    ディスカッション＝フィードバックへの追加コメントの件数。　評価所要日数＝学習者の提出から指導医の評価完了までの平均日数。
+    ディスカッション＝フィードバックへの追加コメントの件数。　評価所要日数＝学習者の提出から指導医の評価完了までの平均日数。<br>指導医コメントへの評価入力率＝学習者が★評価を入力した症例 ÷ 評価完了した症例（星は後から選び直せるため、評価日時は最後に選んだ時刻）。　リマインド＝提出から3日経過しても未評価の症例に、指導医へ1回だけ送るメール。リマインド後の評価入力率＝リマインドを送った症例のうち、その後に評価完了した割合。　リマインドから評価までの平均日数＝リマインド送信から評価完了までの日数（リマインド後に完了した症例のみ）。
   </details>
 
   <div id="msg" class="loading">読み込み中...</div>
@@ -182,9 +182,15 @@ const FAC_COLS = [
   { h: '指導医コメント入力率', n: 1, v: f => rate(f.evaluatorCommentN, f.reviewed), html: f => pct(f.evaluatorCommentN, f.reviewed), csv: f => pctTxt(f.evaluatorCommentN, f.reviewed) },
   { h: 'ディスカッション件数', n: 1, v: f => f.discussionN },
   { h: '評価所要日数(平均)', n: 1, v: f => f.tatN ? Math.round(f.tatSum / f.tatN * 10) / 10 : '' },
+  { h: '指導医コメントへの評価入力率', n: 1, v: f => rate(f.ratedN, f.reviewed), html: f => pct(f.ratedN, f.reviewed), csv: f => pctTxt(f.ratedN, f.reviewed) },
+  { h: '同・評価(★)平均', n: 1, v: f => f.ratedN ? Math.round(f.ratingSum / f.ratedN * 100) / 100 : '' },
+  { h: '同・完了から評価までの平均日数', n: 1, v: f => f.ratingDaysN ? Math.round(f.ratingDaysSum / f.ratingDaysN * 10) / 10 : '' },
+  { h: 'リマインド送信件数', n: 1, v: f => f.remindedN },
+  { h: 'リマインド後の評価入力率', n: 1, v: f => rate(f.remindedReviewedN, f.remindedN), html: f => pct(f.remindedReviewedN, f.remindedN), csv: f => pctTxt(f.remindedReviewedN, f.remindedN) },
+  { h: 'リマインドから評価までの平均日数', n: 1, v: f => f.remindDaysN ? Math.round(f.remindDaysSum / f.remindDaysN * 10) / 10 : '' },
 ];
 function facTotal() {
-  const t = { facilityCode: '合計', facilityName: '', learners: 0, evaluators: 0, cases: 0, draft: 0, pending: 0, reviewed: 0, learnerCommentN: 0, evaluatorCommentN: 0, preOpGoalN: 0, discussionN: 0, tatSum: 0, tatN: 0 };
+  const t = { facilityCode: '合計', facilityName: '', learners: 0, evaluators: 0, cases: 0, draft: 0, pending: 0, reviewed: 0, learnerCommentN: 0, evaluatorCommentN: 0, preOpGoalN: 0, discussionN: 0, tatSum: 0, tatN: 0, ratedN: 0, ratingSum: 0, ratingDaysSum: 0, ratingDaysN: 0, remindedN: 0, remindedReviewedN: 0, remindDaysSum: 0, remindDaysN: 0 };
   D.facilities.forEach(f => Object.keys(t).forEach(k => { if (typeof t[k] === 'number') t[k] += f[k]; }));
   return t;
 }
@@ -220,6 +226,10 @@ const USR_COLS = [
     html: u => u.role === 'learner' ? pct(u.submitted, u.started) : pct(u.reviewed, u.assigned),
     csv: u => u.role === 'learner' ? pctTxt(u.submitted, u.started) : pctTxt(u.reviewed, u.assigned) },
   { h: 'コメント入力数', n: 1, v: u => u.commentN },
+  { h: '指導医コメントへの評価入力率', n: 1, v: u => u.role === 'learner' ? rate(u.ratedN, u.reviewed) : null,
+    html: u => u.role === 'learner' ? pct(u.ratedN, u.reviewed) : '<span style="color:#cbd5e0">–</span>', csv: u => u.role === 'learner' ? pctTxt(u.ratedN, u.reviewed) : '' },
+  { h: 'リマインド受信数', n: 1, v: u => u.role === 'evaluator' ? u.remindedN : '' },
+  { h: 'リマインド後に評価完了', n: 1, v: u => u.role === 'evaluator' ? u.remindedReviewedN : '' },
   { h: '最終活動日', v: u => u.lastActivity },
 ];
 function usrFiltered() {
@@ -239,6 +249,13 @@ const CASE_COLS = [
   { h: '作成日', v: c => c.createdAt },
   { h: '提出日', v: c => c.submittedAt },
   { h: '評価日', v: c => c.reviewedAt },
+  { h: '提出→評価(日)', n: 1, v: c => c.submitToReviewDays },
+  { h: 'リマインド送信', v: c => c.reminderSentAt },
+  { h: 'リマインド→評価(日)', n: 1, v: c => c.reminderToReviewDays },
+  { h: 'コメント評価(★)', n: 1, v: c => c.commentRating },
+  { h: 'コメント評価日時', v: c => c.commentRatedAt },
+  { h: '評価完了→コメント評価(日)', n: 1, v: c => c.reviewToRatingDays },
+  { h: '結果を閲覧', v: c => c.feedbackViewed ? '○' : '' },
   { h: '術前目標', v: c => c.preOpGoal ? '○' : '' },
   { h: '学習者コメント', v: c => (c.fbGoodL || c.fbGoalL) ? '○' : '' },
   { h: '指導医コメント', v: c => (c.fbGoodE || c.fbGoalE) ? '○' : '' },
@@ -275,9 +292,9 @@ function csv(t) {
   } else {
     const H = ['症例ID','施設コード','施設名','症例No.','術式','学習者(匿名)','指導医(匿名)','状態','作成日','提出日','評価日','術前目標',
       '自律度(学習者)','パフォーマンス(学習者)','難易度(学習者)','TS1(学習者)','TS2(学習者)','TS3(学習者)','TS4(学習者)','TS5(学習者)','良かった点(学習者)','次回の目標・改善点(学習者)',
-      '自律度(指導医)','パフォーマンス(指導医)','難易度(指導医)','TS1(指導医)','TS2(指導医)','TS3(指導医)','TS4(指導医)','TS5(指導医)','良かった点(指導医)','次回の目標・改善点(指導医)','ディスカッション件数'];
+      '自律度(指導医)','パフォーマンス(指導医)','難易度(指導医)','TS1(指導医)','TS2(指導医)','TS3(指導医)','TS4(指導医)','TS5(指導医)','良かった点(指導医)','次回の目標・改善点(指導医)','ディスカッション件数','提出→評価(日)','リマインド送信','リマインド→評価(日)','コメント評価(★)','コメント評価日時','評価完了→コメント評価(日)','結果を閲覧'];
     dl(`PERFORM_症例一覧_${stamp()}.csv`, [H].concat(caseFiltered().map(c => [c.id, c.facilityCode, c.facilityName, c.caseNo, c.procedure, c.learnerLabel, c.evaluatorLabel, STJ[c.status] || c.status, c.createdAt, c.submittedAt, c.reviewedAt, c.preOpGoal,
-      c.autoL, c.perfL, c.diffL, c.ts1L, c.ts2L, c.ts3L, c.ts4L, c.ts5L, c.fbGoodL, c.fbGoalL, c.autoE, c.perfE, c.diffE, c.ts1E, c.ts2E, c.ts3E, c.ts4E, c.ts5E, c.fbGoodE, c.fbGoalE, c.discussionN])));
+      c.autoL, c.perfL, c.diffL, c.ts1L, c.ts2L, c.ts3L, c.ts4L, c.ts5L, c.fbGoodL, c.fbGoalL, c.autoE, c.perfE, c.diffE, c.ts1E, c.ts2E, c.ts3E, c.ts4E, c.ts5E, c.fbGoodE, c.fbGoalE, c.discussionN, c.submitToReviewDays, c.reminderSentAt, c.reminderToReviewDays, c.commentRating, c.commentRatedAt, c.reviewToRatingDays, c.feedbackViewed ? 1 : 0])));
   }
 }
 load();
