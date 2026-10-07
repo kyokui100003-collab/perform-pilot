@@ -149,6 +149,10 @@ window.addEventListener('DOMContentLoaded', () => {
   const params = new URLSearchParams(location.search);
   const fc = params.get('fc') || '';
   const fn = params.get('fn') || '';
+  // メールの「この症例を開く」リンク経由：症例IDと役割を覚えておき、ログイン後にその症例を開く
+  const jumpCase = params.get('case') || '';
+  if (jumpCase) { try { sessionStorage.setItem('jumpCase', jumpCase); } catch (e) {} }
+  const linkRole = params.get('r') || '';
 
   if (fc) {
     // QRスキャン経由 → 施設コードをバナー表示し、入力フィールドは隠す
@@ -164,6 +168,7 @@ window.addEventListener('DOMContentLoaded', () => {
   // 記憶済みログイン情報を復元
   const saved = JSON.parse(localStorage.getItem('perform_login') || '{}');
   if (saved.role)         selectRole(saved.role);
+  if (linkRole === 'learner' || linkRole === 'evaluator') selectRole(linkRole);
   if (saved.name)         document.getElementById('name').value = saved.name;
   if (saved.pin)          document.getElementById('pin').value  = saved.pin;
   if (!fc && saved.facilityCode)

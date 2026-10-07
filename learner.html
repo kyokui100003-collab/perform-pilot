@@ -163,6 +163,12 @@
   .thread-name { font-size: 12.5px; font-weight: 700; color: #333; }
   .thread-time { font-size: 10.5px; color: #aaa; margin-left: 6px; font-weight: 400; }
   .thread-text { font-size: 13.5px; color: #333; margin: 3px 0 5px; white-space: pre-wrap; line-height: 1.5; }
+  .thread-actions { display:flex; align-items:center; gap:10px; margin-top:8px; padding-top:6px; border-top:1px dashed #e2e8f0; }
+  .like-pill { border:1.5px solid #cbd5e0; background:#fff; color:#4a5568; border-radius:99px; padding:3px 12px; font-size:12.5px; cursor:pointer; }
+  .like-pill:hover { background:#f7fafc; }
+  .like-pill.liked { border-color:#2ab5a8; background:#e6f7f5; color:#1f8f85; font-weight:700; }
+  .like-pill:disabled { opacity:.5; cursor:default; }
+  .act-sep { width:1px; height:14px; background:#cbd5e0; }
   .thread-like-btn { background: none; border: none; font-size: 12px; color: #999; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; padding: 2px 0; }
   .thread-like-btn.liked { color: #e53e3e; font-weight: 700; }
   .thread-input-row { display: flex; gap: 8px; margin-top: 12px; }
@@ -388,6 +394,7 @@ function mockGasCall(data) {
     ]});
     else if (data.action === 'addComment') resolve({ success:true, id:'c_new' });
     else if (data.action === 'toggleLike') resolve({ success:true, likeCount:1, likedByMe:true });
+    else if (data.action === 'editComment' || data.action === 'deleteComment') resolve({ success:true });
     else if (data.action === 'rateEvaluatorComment') resolve({ success:true });
     else resolve({ success:false, error:'デモモード: この操作は未対応です' });
   }, 350));
@@ -460,7 +467,19 @@ async function initForm() {
     renderResultList();
     renderChartSection();
     updateNewResultsBadge();
+    jumpToLinkedCase();
   } catch { c.innerHTML = `<div class="card"><div class="error-box">接続エラー。ネットワークを確認してください。</div></div>`; }
+}
+
+// メールのリンクから来た場合：該当の症例の詳細を自動で開く
+function jumpToLinkedCase() {
+  let id = '';
+  try { id = sessionStorage.getItem('jumpCase') || ''; sessionStorage.removeItem('jumpCase'); } catch (e) {}
+  if (!id) return;
+  const r = (allResults || []).find(x => String(x.id) === String(id));
+  if (!r) return;   // 自分の症例でない／まだ評価前の場合は何もしない
+  switchTab('results');
+  openResult(r);
 }
 
 function renderCaseList() {
@@ -1152,7 +1171,7 @@ function renderResultDetail(r) {
     <div class="thread" id="threadArea-learner"></div>
     <div class="thread-input-row">
       <textarea id="newCommentBody-learner" placeholder="このフィードバックにコメントを追加..."></textarea>
-      <button class="thread-send-btn" onclick="postComment('${r.id}','learner')">送信</button>
+      <button class="thread-send-btn" onclick="postComment('${r.id}','learner', this)">送信</button>
     </div>
 
     <div class="sec-hdr" style="margin-top:22px">指導医のフィードバック</div>
@@ -1161,7 +1180,7 @@ function renderResultDetail(r) {
     <div class="thread" id="threadArea-evaluator"></div>
     <div class="thread-input-row">
       <textarea id="newCommentBody-evaluator" placeholder="このフィードバックにコメントを追加..."></textarea>
-      <button class="thread-send-btn" onclick="postComment('${r.id}','evaluator')">送信</button>
+      <button class="thread-send-btn" onclick="postComment('${r.id}','evaluator', this)">送信</button>
     </div>
 
     ${!r.commentRating ? `
@@ -1231,12 +1250,15 @@ function renderThread(target, recordId) {
   const comments = threadCache[target];
   if (!comments.length) { area.innerHTML = '<div class="thread-empty">まだコメントはありません。</div>'; return; }
   area.innerHTML = comments.map(c => `
-    <div class="thread-item">
-      <div class="thread-avatar ${c.authorRole}">${(c.authorName||'?')[0]}</div>
+    <div class="thread-item" id="cm-${c.id}">
+      <div class="thread-avatar ${c.authorRole}">${escH((c.authorName||'?')[0])}</div>
       <div class="thread-body">
-        <div><span class="thread-name">${c.authorName}</span><span class="thread-time">${fmtTime(c.postedAt)}</span></div>
-        <div class="thread-text">${c.body}</div>
-        <button class="thread-like-btn ${c.likedByMe?'liked':''}" onclick="likeComment('${c.id}', '${recordId}')">👍 ${c.likeCount||''}</button>
+        <div><span class="thread-name">${escH(c.authorName)}</span><span class="thread-time">${fmtTime(c.postedAt)}${c.edited?'（編集済み）':''}</span></div>
+        <div class="thread-text" id="cmtext-${c.id}" style="white-space:pre-wrap">${escH(c.body)}</div>
+        <div class="thread-actions" id="cmact-${c.id}">
+          <button class="like-pill ${c.likedByMe?'liked':''}" onclick="likeComment('${c.id}','${recordId}', this)" title="${c.likedByMe?'いいね！を取り消す':'いいね！する'}">👍 いいね！${c.likeCount?` <b>${c.likeCount}</b>`:''}</button>
+          ${c.mine ? `<span class="act-sep"></span><button class="thread-like-btn" onclick="startEditComment('${c.id}','${target}','${recordId}')">編集</button><button class="thread-like-btn" onclick="deleteComment('${c.id}','${recordId}', this)">削除</button>` : ''}
+        </div>
       </div>
     </div>`).join('');
 }
@@ -1252,23 +1274,62 @@ function fmtDate(iso) {
   return isNaN(d.getTime()) ? '' : `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`;
 }
 
-async function postComment(recordId, target) {
+function escH(s) { return String(s==null?'':s).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+
+async function postComment(recordId, target, btn) {
   const input = document.getElementById(`newCommentBody-${target}`);
   const body = input.value.trim();
   if (!body) return;
+  if (btn) { if (btn.disabled) return; btn.disabled = true; btn.dataset.label = btn.textContent; btn.textContent = '送信中…'; }
+  input.disabled = true;
   try {
     const res = await gasCall({ action:'addComment', facilityCode, userId, pin, role:'learner', recordId, body, target });
     if (!res.success) { alert('エラー: '+res.error); return; }
     input.value = '';
-    loadThread(recordId);
+    await loadThread(recordId);
   } catch { alert('接続エラーが発生しました。'); }
+  finally { input.disabled = false; if (btn) { btn.disabled = false; btn.textContent = btn.dataset.label || '送信'; } }
 }
 
-async function likeComment(commentId, recordId) {
+function startEditComment(commentId, target, recordId) {
+  const c = (threadCache[target] || []).find(x => String(x.id) === String(commentId));
+  if (!c) return;
+  const box = document.getElementById('cmtext-' + commentId);
+  const act = document.getElementById('cmact-' + commentId);
+  box.innerHTML = `<textarea id="cmedit-${commentId}" style="width:100%;min-height:60px;box-sizing:border-box">${escH(c.body)}</textarea>`;
+  act.innerHTML = `<button class="thread-send-btn" onclick="saveEditComment('${commentId}','${recordId}', this)">保存</button> <button class="thread-like-btn" onclick="loadThread('${recordId}')">キャンセル</button>`;
+}
+
+async function saveEditComment(commentId, recordId, btn) {
+  const body = document.getElementById('cmedit-' + commentId).value.trim();
+  if (!body) { alert('コメントを入力してください'); return; }
+  if (btn.disabled) return;
+  btn.disabled = true; btn.textContent = '保存中…';
+  try {
+    const res = await gasCall({ action:'editComment', facilityCode, userId, pin, commentId, body });
+    if (!res.success) { alert('エラー: '+res.error); btn.disabled = false; btn.textContent = '保存'; return; }
+    await loadThread(recordId);
+  } catch { alert('接続エラーが発生しました。'); btn.disabled = false; btn.textContent = '保存'; }
+}
+
+async function deleteComment(commentId, recordId, btn) {
+  if (!confirm('このコメントを削除しますか？（元に戻せません）')) return;
+  if (btn.disabled) return;
+  btn.disabled = true; btn.textContent = '削除中…';
+  try {
+    const res = await gasCall({ action:'deleteComment', facilityCode, userId, pin, commentId });
+    if (!res.success) { alert('エラー: '+res.error); btn.disabled = false; btn.textContent = '削除'; return; }
+    await loadThread(recordId);
+  } catch { alert('接続エラーが発生しました。'); btn.disabled = false; btn.textContent = '削除'; }
+}
+
+async function likeComment(commentId, recordId, btn) {
+  if (btn) { if (btn.disabled) return; btn.disabled = true; }
   try {
     const res = await gasCall({ action:'toggleLike', facilityCode, userId, pin, commentId });
-    if (res.success) loadThread(recordId);
+    if (res.success) await loadThread(recordId);
   } catch {}
+  finally { if (btn) btn.disabled = false; }
 }
 
 function drawModalRadar(r) {
