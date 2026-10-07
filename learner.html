@@ -1183,12 +1183,12 @@ function renderResultDetail(r) {
       <button class="thread-send-btn" onclick="postComment('${r.id}','evaluator', this)">送信</button>
     </div>
 
-    ${!r.commentRating ? `
     <div class="rate-box" id="rateBox">
       <div class="rate-q">指導医のコメントは参考になりましたか？</div>
-      <div class="star-row" id="starRow">${[1,2,3,4,5].map(n=>`<button class="star-btn" data-n="${n}" onclick="rateComment('${r.id}',${n})">★</button>`).join('')}</div>
+      <div class="star-row" id="starRow">${[1,2,3,4,5].map(n=>`<button class="star-btn ${(r.commentRating||0)>=n?'active':''}" data-n="${n}" onclick="rateComment('${r.id}',${n})">★</button>`).join('')}</div>
+      <div class="rate-done" id="rateStatus">${r.commentRating ? '★ '+r.commentRating+' と評価済みです（星を押すといつでも選び直せます）' : ''}</div>
       <div class="rate-privacy-note">※ この評価は指導医には共有されません</div>
-    </div>` : `<div class="rate-box"><div class="rate-done">★ ${r.commentRating} と評価済みです</div><div class="rate-privacy-note">※ この評価は指導医には共有されません</div></div>`}
+    </div>
   `;
 }
 
@@ -1209,14 +1209,23 @@ async function saveLearnerComment(recordId) {
   } catch { alert('接続エラーが発生しました。'); }
 }
 
+let ratingBusy = false;
 async function rateComment(recordId, n) {
-  document.querySelectorAll('#starRow .star-btn').forEach(b => b.classList.toggle('active', +b.dataset.n <= n));
+  if (ratingBusy) return;
+  ratingBusy = true;
+  const prev = currentModalRecord ? (currentModalRecord.commentRating || 0) : 0;
+  const paint = v => document.querySelectorAll('#starRow .star-btn').forEach(b => b.classList.toggle('active', +b.dataset.n <= v));
+  paint(n);
   try {
     const res = await gasCall({ action:'rateEvaluatorComment', facilityCode, userId, pin, recordId, rating:n });
-    if (!res.success) { alert('エラー: '+res.error); return; }
-    document.getElementById('rateBox').innerHTML = `<div class="rate-done">★ ${n} と評価済みです</div><div class="rate-privacy-note">※ この評価は指導医には共有されません</div>`;
+    if (!res.success) { alert('エラー: '+res.error); paint(prev); return; }
+    const st = document.getElementById('rateStatus');
+    if (st) st.textContent = `★ ${n} と評価済みです（星を押すといつでも選び直せます）`;
     if (currentModalRecord) currentModalRecord.commentRating = n;
-  } catch { alert('接続エラーが発生しました。'); }
+    const hit = (allResults || []).find(x => String(x.id) === String(recordId));
+    if (hit) { hit.commentRating = n; renderResultList(); }
+  } catch { alert('接続エラーが発生しました。'); paint(prev); }
+  finally { ratingBusy = false; }
 }
 
 // -------------------------------------------------------
