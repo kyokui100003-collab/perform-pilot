@@ -414,7 +414,7 @@ function caseCard(r, isPending) {
       <span class="card-title">${r.procedure}${r.hasGoal ? '<span class="badge-goal">🎯 目標あり</span>' : ''}</span>
       ${isPending ? '<span class="badge-new">未評価</span>' : '<span class="badge-done">評価済み</span>'}
     </div>
-    <div class="card-meta">症例No.${r.caseNo}　学習者: ${r.learnerName || '(不明)'}${r.submittedAt ? '　|　依頼日: '+fmtDate(r.submittedAt) : ''}</div>
+    <div class="card-meta">症例No.${r.caseNo}　学習者: ${r.learnerName || '(不明)'}${r.surgeryDate ? '　|　手術日: '+fmtSD(r.surgeryDate) : ''}${r.submittedAt ? '　|　依頼日: '+fmtDate(r.submittedAt) : ''}</div>
   </div>`;
 }
 
@@ -500,7 +500,7 @@ function learnerCard(l, scope) {
     const ts_e = r.evaluatorTS || {};
     const avgL = avgTS(ts_l), avgE = avgTS(ts_e);
     return `<div class="case-row">
-      <div class="case-proc">症例No.${r.caseNo}　${r.procedure}　<span style="color:#999;font-size:11px">${fmtDate(r.reviewedAt)}</span>${scope === 'facility' ? `　<span style="color:#999;font-size:11px">担当: ${r.evaluatorName}</span>` : ''}</div>
+      <div class="case-proc">症例No.${r.caseNo}　${r.procedure}　<span style="color:#999;font-size:11px">${r.surgeryDate ? '手術日 '+fmtSD(r.surgeryDate)+'　' : ''}${fmtDate(r.reviewedAt)}</span>${scope === 'facility' ? `　<span style="color:#999;font-size:11px">担当: ${r.evaluatorName}</span>` : ''}</div>
       <div class="score-chips">
         <span class="sc sc-l" title="学習者 パフォーマンス">P:${PERF_R[r.learnerPerformance]||r.learnerPerformance}</span>
         <span class="sc sc-e" title="指導医 パフォーマンス">P:${PERF_R[r.evaluatorPerformance]||r.evaluatorPerformance}</span>
@@ -595,6 +595,7 @@ function renderEvalForm(r) {
     <div class="info-grid">
       <div class="info-item"><label>症例No.</label><span>${r.caseNo}</span></div>
       <div class="info-item"><label>術式</label><span>${r.procedure}</span></div>
+      ${r.surgeryDate ? `<div class="info-item"><label>手術日</label><span>${fmtSD(r.surgeryDate)}</span></div>` : ''}
       <div class="info-item"><label>学習者</label><span>${r.learnerName}</span></div>
       <div class="info-item"><label>指導医</label><span>${r.evaluatorName}</span></div>
     </div>
@@ -798,7 +799,7 @@ function renderResultDetail(r) {
   setTimeout(() => drawModalRadar(r), 50);
   return `
     <div style="background:#f8f9fa;border-radius:10px;padding:13px 15px;margin-bottom:16px;font-size:13px;color:#555;line-height:1.7">
-      <strong>症例No.${r.caseNo}</strong>　${r.procedure}<br>
+      <strong>症例No.${r.caseNo}</strong>　${r.procedure}${r.surgeryDate ? '　／　手術日: '+fmtSD(r.surgeryDate) : ''}<br>
       学習者: ${r.learnerName || '(不明)'}　／　指導医: ${r.evaluatorName || '(不明)'}${r.reviewedAt ? '　／　評価完了日: '+(fmtDate(r.reviewedAt)||'未評価') : ''}
     </div>
     ${buildCompareTable(r)}
@@ -877,6 +878,12 @@ function fmtTime(iso) {
 }
 function fmtDate(iso) {
   try { const d = new Date(iso); return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`; } catch { return ''; }
+}
+
+// 手術日（yyyy-MM-dd）の表示用：2026-10-08 → 2026/10/8
+function fmtSD(s) {
+  const m = String(s || '').match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  return m ? `${m[1]}/${parseInt(m[2],10)}/${parseInt(m[3],10)}` : '';
 }
 
 function escH(s) { return String(s==null?'':s).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }

@@ -490,7 +490,7 @@ function renderCaseList() {
         <span class="rc-name">${d.procedure}<span class="badge-goal">症例No.${d.caseNo}</span></span>
         <span class="badge-draft">進行中</span>
       </div>
-      <div class="rc-meta">指導医: ${d.evaluatorName || '(不明)'}　|　開始日: ${fmtDate(d.createdAt) || '不明'}${d.preOpGoal ? '　🎯 術前目標あり' : ''}</div>
+      <div class="rc-meta">指導医: ${d.evaluatorName || '(不明)'}　|　${d.surgeryDate ? '手術日: ' + fmtSD(d.surgeryDate) : '開始日: ' + (fmtDate(d.createdAt) || '不明')}${d.preOpGoal ? '　🎯 術前目標あり' : ''}</div>
     </div>`).join('') : '';
 
   c.innerHTML = `
@@ -547,6 +547,8 @@ function renderStartCase() {
       </div>
       <label>担当指導医 <span class="required">*</span></label>
       <select id="newEvalSel"><option value="">指導医を選択...</option>${opts}</select>
+      <label>手術日 <span class="required">*</span></label>
+      <input type="date" id="newSurgeryDate" value="${todayStr()}">
     </div>
     <div class="card">
       <div class="card-title">術前目標（任意）</div>
@@ -862,20 +864,23 @@ async function startCaseAction(goalOnly) {
   const proc = resolveProcedureValue();
   const evaluatorId = document.getElementById('newEvalSel').value;
   const goal = document.getElementById('newGoal').value.trim();
+  const surgeryDate = document.getElementById('newSurgeryDate').value;
   if (!proc.text) { alert('術式を入力（または選択）してください'); return; }
   if (!evaluatorId) { alert('担当指導医を選択してください'); return; }
+  if (!surgeryDate) { alert('手術日を入力してください'); return; }
 
   // 評価フォームへ進んでから送信するまでの間、選択内容を保持しておく（NCDコードは
   // 学習者・評価者の画面には一切表示しない。裏でバックエンドへ送るためだけに保持する）
   window.__freshProcedure = proc.text;
   window.__freshNcdCode = proc.ncdCode;
   window.__freshEvaluatorId = evaluatorId;
+  window.__freshSurgeryDate = surgeryDate;
 
   if (goalOnly) {
     const btn = document.getElementById('goalOnlyBtn');
     btn.disabled = true; btn.textContent = '保存中...';
     try {
-      const res = await gasCall({ action: 'startCase', facilityCode, userId, pin, procedure: proc.text, ncdCode: proc.ncdCode, evaluatorId, goal });
+      const res = await gasCall({ action: 'startCase', facilityCode, userId, pin, procedure: proc.text, ncdCode: proc.ncdCode, evaluatorId, goal, surgeryDate });
       if (!res.success) { alert('エラー: '+res.error); btn.disabled=false; btn.textContent='目標だけ保存して術後に評価する'; return; }
       document.getElementById('successTitle').textContent = '症例を登録しました';
       document.getElementById('successMsg').innerHTML = `症例No. <strong>${res.caseNo}</strong> として登録しました。${goal ? '指導医に目標が共有されました。<br>' : ''}手術後、この症例を開いて評価を入力してください。`;
@@ -883,7 +888,7 @@ async function startCaseAction(goalOnly) {
     } catch { alert('接続エラーが発生しました。'); btn.disabled=false; btn.textContent='目標だけ保存して術後に評価する'; }
   } else {
     // 評価フォームへ（症例はまだ確定登録せず、評価送信時にまとめて作成）
-    renderEvalForm(null, { procedure: proc.text, evaluatorId, goal });
+    renderEvalForm(null, { procedure: proc.text, evaluatorId, goal, surgeryDate });
   }
 }
 
@@ -915,6 +920,8 @@ function renderEvalForm(draft, fresh) {
         ${draft ? `<div class="info-item"><label>症例No.</label><span>${draft.caseNo}</span></div>` : ''}
         <div class="info-item"><label>学習者名</label><span>${userName}</span></div>
       </div>
+      <label style="margin-top:12px">手術日 <span class="required">*</span></label>
+      <input type="date" id="evalSurgeryDate" value="${(draft ? draft.surgeryDate : fresh.surgeryDate) || ''}" max="${todayStr()}">
     </div>
     <div class="card">
       <div class="card-title">術前目標${goalIsPreop ? '<span class="goal-mode-tag">術前に設定済み</span>' : ''}</div>
@@ -990,6 +997,7 @@ async function saveEvalDraft(recordId) {
 
   try {
     const payload = { action:'saveLearnerDraft', facilityCode, userId, pin,
+      surgeryDate: (document.getElementById('evalSurgeryDate') || {}).value || '',
       record:{ autonomy, performance, difficulty, ts1, ts2, ts3, ts4, ts5, feedbackGood, feedbackGoal } };
     if (recordId) { payload.recordId = recordId; if (goal !== undefined) payload.goal = goal; }
     if (!recordId) {
@@ -1013,6 +1021,10 @@ async function saveEvalDraft(recordId) {
 async function submitForm(recordId) {
   const autonomy = getRadio('autonomy'), performance = getRadio('performance'), difficulty = getRadio('difficulty');
   const ts1=getRadio('ts1'),ts2=getRadio('ts2'),ts3=getRadio('ts3'),ts4=getRadio('ts4'),ts5=getRadio('ts5');
+  const surgeryDateEl = document.getElementById('evalSurgeryDate');
+  const surgeryDate = surgeryDateEl ? surgeryDateEl.value : '';
+  if (!surgeryDate) { alert('手術日を入力してください'); return; }
+  if (surgeryDate > todayStr()) { alert('手術日が今日より先の日付になっています。確認してください'); return; }
   if (!autonomy||!performance||!difficulty) { alert('自律度・術中パフォーマンス・症例難易度を選択してください'); return; }
   if (!ts1||!ts2||!ts3||!ts4||!ts5) { alert('Technical Scale の全項目を選択してください'); return; }
 
@@ -1025,7 +1037,7 @@ async function submitForm(recordId) {
   document.getElementById('submitSpinner').style.display = 'block';
   document.getElementById('submitLabel').textContent = '送信中...';
   try {
-    const payload = { action:'submitLearner', facilityCode, userId, pin,
+    const payload = { action:'submitLearner', facilityCode, userId, pin, surgeryDate,
       record:{ autonomy, performance, difficulty, ts1, ts2, ts3, ts4, ts5, feedbackGood, feedbackGoal } };
     if (recordId) { payload.recordId = recordId; if (goal !== undefined) payload.goal = goal; }
     if (!recordId) {
@@ -1089,7 +1101,7 @@ function renderResultList() {
   el.innerHTML = [...allResults].reverse().map(r => `
     <div class="result-card" onclick='openResult(${JSON.stringify(r).replace(/'/g,"&#39;")})'>
       <div class="rc-top"><span class="rc-name">${r.procedure}<span class="badge-goal">症例No.${r.caseNo}</span>${r.isNew ? '<span class="badge-new-flag">NEW</span>' : ''}</span><span class="badge-done">評価済み</span></div>
-      <div class="rc-meta">指導医: ${r.evaluatorName || '(不明)'}　|　評価完了日: ${fmtDate(r.reviewedAt) || '未評価'}${r.commentRating ? '　★あなたの評価: '+r.commentRating : ''}</div>
+      <div class="rc-meta">指導医: ${r.evaluatorName || '(不明)'}　|　${r.surgeryDate ? '手術日: ' + fmtSD(r.surgeryDate) + '　|　' : ''}評価完了日: ${fmtDate(r.reviewedAt) || '未評価'}${r.commentRating ? '　★あなたの評価: '+r.commentRating : ''}</div>
     </div>`).join('');
 }
 
@@ -1140,6 +1152,7 @@ function renderResultDetail(r) {
       <div class="info-item"><label>術式</label><span>${r.procedure}</span></div>
       <div class="info-item"><label>指導医</label><span>${r.evaluatorName || '(不明)'}</span></div>
       <div class="info-item"><label>学習者</label><span>${r.learnerName || '(不明)'}</span></div>
+      ${r.surgeryDate ? `<div class="info-item"><label>手術日</label><span>${fmtSD(r.surgeryDate)}</span></div>` : ''}
       <div class="info-item"><label>評価完了日</label><span>${fmtDate(r.reviewedAt) || '未評価'}</span></div>
     </div>
     <div class="sec-hdr">スコア比較</div>
@@ -1281,6 +1294,17 @@ function fmtDate(iso) {
   if (!iso) return '';
   const d = new Date(iso);
   return isNaN(d.getTime()) ? '' : `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`;
+}
+
+// 手術日（yyyy-MM-dd）の表示用：2026-10-08 → 2026/10/8
+function fmtSD(s) {
+  const m = String(s || '').match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  return m ? `${m[1]}/${parseInt(m[2],10)}/${parseInt(m[3],10)}` : '';
+}
+// 今日の日付（端末の日付）を yyyy-MM-dd で返す
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
 function escH(s) { return String(s==null?'':s).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
