@@ -262,6 +262,18 @@
 <script>
 const GAS_URL = window.PERFORM_CONFIG.GAS_URL;
 
+// デモ表示（管理者の確認用）：URLに ?demo=1 を付けると、サンプルデータだけで動く。実データには接続せず、何も保存されない。
+(function () {
+  try {
+    if (new URLSearchParams(location.search).get('demo') === '1') {
+      sessionStorage.clear();
+      sessionStorage.setItem('perform_demo', '1');
+      sessionStorage.setItem('role', 'learner'); sessionStorage.setItem('userId', 'usr_l01'); sessionStorage.setItem('userName', 'デモ 学習者');
+      sessionStorage.setItem('facilityCode', 'DEMO'); sessionStorage.setItem('facilityName', 'デモ施設'); sessionStorage.setItem('department', '消化器外科'); sessionStorage.setItem('pin', '0000');
+    }
+  } catch (e) {}
+})();
+
 const role         = sessionStorage.getItem('role');
 const userId       = sessionStorage.getItem('userId');
 const userName     = sessionStorage.getItem('userName');
@@ -277,7 +289,13 @@ document.getElementById('headerInfo').innerHTML =
   (department   ? `　<span style="opacity:0.65">|</span>　${department}`   : '') +
   (facilityName ? `　<span style="opacity:0.65">|</span>　${facilityName}` : '');
 
-const DEMO_MODE = GAS_URL === 'YOUR_GAS_WEB_APP_URL_HERE';
+const DEMO_MODE = GAS_URL === 'YOUR_GAS_WEB_APP_URL_HERE' || sessionStorage.getItem('perform_demo') === '1';
+if (DEMO_MODE && sessionStorage.getItem('perform_demo') === '1') {
+  const b = document.createElement('div');
+  b.textContent = 'デモ表示：サンプルデータです。入力しても保存されません。';
+  b.style.cssText = 'background:#d98e30;color:#fff;font-size:12px;font-weight:700;text-align:center;padding:5px 8px;position:sticky;top:0;z-index:300';
+  document.body.insertBefore(b, document.body.firstChild);
+}
 const FREE_MODE = !!window.PERFORM_CONFIG.FREE_PROCEDURE_MODE;
 
 
@@ -353,18 +371,18 @@ function buildProcedureOptionsForDept(dept, filterText, organ) {
 
 const MOCK_EVALUATORS = [{ userId:'usr_e01', name:'デモ評価者1', department:'消化器外科' }];
 const MOCK_RECORDS = [
-  { id:'r01', caseNo:'001', procedure:'腹腔鏡下胆嚢摘出術', status:'reviewed', preOpGoal:'クリッピングの手技を安定させる', goalEntryMode:'preop',
+  { id:'r01', caseNo:'001', surgeryDate:'2026-10-02', procedure:'腹腔鏡下胆嚢摘出術', status:'reviewed', preOpGoal:'クリッピングの手技を安定させる', goalEntryMode:'preop',
     learnerAutonomy:2, learnerPerformance:2, learnerDifficulty:2, learnerTS:{ts1:2,ts2:2,ts3:3,ts4:2,ts5:2},
     learnerFeedbackGood:'視野展開は意識できた', learnerFeedbackGoal:'クリッピングに時間がかかった。次は落ち着いて行いたい。',
     evaluatorAutonomy:2, evaluatorPerformance:3, evaluatorDifficulty:2, evaluatorTS:{ts1:3,ts2:2,ts3:3,ts4:3,ts5:3},
     evaluatorFeedbackGood:'基本操作は良好でした。', evaluatorFeedbackGoal:'視野展開の工夫を次回意識してみましょう。', commentRating:null, isNew:true },
-  { id:'r02', caseNo:'002', procedure:'腹腔鏡下胆嚢摘出術', status:'pending', preOpGoal:'', goalEntryMode:'',
+  { id:'r02', caseNo:'002', surgeryDate:'2026-10-05', procedure:'腹腔鏡下胆嚢摘出術', status:'pending', preOpGoal:'', goalEntryMode:'',
     learnerAutonomy:2, learnerPerformance:3, learnerDifficulty:2, learnerTS:{ts1:3,ts2:3,ts3:3,ts4:3,ts5:2},
     learnerFeedbackGood:'前回より落ち着いて操作できた。', learnerFeedbackGoal:'次はもっと早く。',
     evaluatorAutonomy:null, evaluatorPerformance:null, evaluatorDifficulty:null, evaluatorTS:{}, evaluatorFeedbackGood:'', evaluatorFeedbackGoal:'' },
 ];
 const MOCK_DRAFTS = [
-  { id:'d01', caseNo:'003', procedure:'腹腔鏡下胆嚢摘出術', evaluatorId:'usr_e01', evaluatorName:'デモ評価者1', preOpGoal:'器具操作をスムーズに行う', goalEntryMode:'preop', createdAt:new Date().toISOString() }
+  { id:'d01', caseNo:'003', surgeryDate:'2026-10-08', procedure:'腹腔鏡下胆嚢摘出術', evaluatorId:'usr_e01', evaluatorName:'デモ評価者1', preOpGoal:'器具操作をスムーズに行う', goalEntryMode:'preop', createdAt:new Date().toISOString() }
 ];
 
 async function gasCall(data) {
@@ -379,7 +397,7 @@ function mockGasCall(data) {
     if (data.action === 'getEvaluators') resolve({ success:true, evaluators: MOCK_EVALUATORS });
     else if (data.action === 'getMyDrafts') resolve({ success:true, drafts: mockDraftStore });
     else if (data.action === 'startCase') {
-      const d = { id:'d'+Date.now(), caseNo:String(mockDraftStore.length+4).padStart(3,'0'), procedure:data.procedure, evaluatorId:data.evaluatorId, evaluatorName:'デモ評価者1', preOpGoal:data.goal||'', goalEntryMode: data.goal?'preop':'', createdAt:new Date().toISOString() };
+      const d = { id:'d'+Date.now(), caseNo:String(mockDraftStore.length+4).padStart(3,'0'), procedure:data.procedure, evaluatorId:data.evaluatorId, evaluatorName:'デモ評価者1', surgeryDate:data.surgeryDate||'', preOpGoal:data.goal||'', goalEntryMode: data.goal?'preop':'', createdAt:new Date().toISOString() };
       mockDraftStore.push(d);
       resolve({ success:true, id:d.id, caseNo:d.caseNo });
     }
@@ -387,6 +405,8 @@ function mockGasCall(data) {
       mockDraftStore = mockDraftStore.filter(d => d.id !== data.recordId);
       resolve({ success:true, id:'r_new_'+Date.now(), caseNo:'00X' });
     }
+    else if (data.action === 'saveLearnerDraft') resolve({ success:true });
+    else if (data.action === 'getLearnerInitialData') resolve({ success:true, evaluators: MOCK_EVALUATORS, drafts: mockDraftStore, results: MOCK_RECORDS.filter(r => r.status === 'reviewed') });
     else if (data.action === 'editLearnerComment') resolve({ success:true });
     else if (data.action === 'getResults') resolve({ success:true, results: MOCK_RECORDS });
     else if (data.action === 'getComments') resolve({ success:true, comments: [

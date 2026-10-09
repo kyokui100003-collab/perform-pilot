@@ -265,6 +265,18 @@
 <script>
 const GAS_URL = window.PERFORM_CONFIG.GAS_URL;
 
+// デモ表示（管理者の確認用）：URLに ?demo=1 を付けると、サンプルデータだけで動く。実データには接続せず、何も保存されない。
+(function () {
+  try {
+    if (new URLSearchParams(location.search).get('demo') === '1') {
+      sessionStorage.clear();
+      sessionStorage.setItem('perform_demo', '1');
+      sessionStorage.setItem('role', 'evaluator'); sessionStorage.setItem('userId', 'usr_e01'); sessionStorage.setItem('userName', 'デモ 指導医');
+      sessionStorage.setItem('facilityCode', 'DEMO'); sessionStorage.setItem('facilityName', 'デモ施設'); sessionStorage.setItem('department', '消化器外科'); sessionStorage.setItem('pin', '0000');
+    }
+  } catch (e) {}
+})();
+
 const role         = sessionStorage.getItem('role');
 const userId       = sessionStorage.getItem('userId');
 const userName     = sessionStorage.getItem('userName');
@@ -280,16 +292,22 @@ document.getElementById('headerInfo').innerHTML =
   (department   ? `　<span style="opacity:0.65">|</span>　${department}`   : '') +
   (facilityName ? `　<span style="opacity:0.65">|</span>　${facilityName}` : '');
 
-const DEMO_MODE = GAS_URL === 'YOUR_GAS_WEB_APP_URL_HERE';
+const DEMO_MODE = GAS_URL === 'YOUR_GAS_WEB_APP_URL_HERE' || sessionStorage.getItem('perform_demo') === '1';
+if (DEMO_MODE && sessionStorage.getItem('perform_demo') === '1') {
+  const b = document.createElement('div');
+  b.textContent = 'デモ表示：サンプルデータです。入力しても保存されません。';
+  b.style.cssText = 'background:#d98e30;color:#fff;font-size:12px;font-weight:700;text-align:center;padding:5px 8px;position:sticky;top:0;z-index:300';
+  document.body.insertBefore(b, document.body.firstChild);
+}
 
 const MOCK_RECORDS = [
-  { id:'r01', caseNo:'001', learnerId:'usr_l01', learnerName:'田中 太郎', procedure:'腹腔鏡下胆嚢摘出術', status:'reviewed',
+  { id:'r01', caseNo:'001', surgeryDate:'2026-10-02', learnerId:'usr_l01', learnerName:'田中 太郎', procedure:'腹腔鏡下胆嚢摘出術', status:'reviewed',
     preOpGoal:'クリッピングの手技を安定させる', goalEntryMode:'preop',
     learnerAutonomy:2, learnerPerformance:2, learnerDifficulty:2, learnerTS:{ts1:2,ts2:2,ts3:3,ts4:2,ts5:2},
     learnerFeedbackGood:'視野展開は意識できた', learnerFeedbackGoal:'クリッピングに時間がかかった。',
     evaluatorAutonomy:2, evaluatorPerformance:3, evaluatorDifficulty:2, evaluatorTS:{ts1:3,ts2:2,ts3:3,ts4:3,ts5:3},
     evaluatorFeedbackGood:'基本操作は良好。', evaluatorFeedbackGoal:'視野展開の工夫が今後の課題。' },
-  { id:'r02', caseNo:'002', learnerId:'usr_l02', learnerName:'鈴木 次郎', procedure:'腹腔鏡下胆嚢摘出術', status:'pending',
+  { id:'r02', caseNo:'002', surgeryDate:'2026-10-05', learnerId:'usr_l02', learnerName:'鈴木 次郎', procedure:'腹腔鏡下胆嚢摘出術', status:'pending',
     preOpGoal:'', goalEntryMode:'', hasGoal:false,
     learnerAutonomy:2, learnerPerformance:3, learnerDifficulty:2, learnerTS:{ts1:3,ts2:3,ts3:3,ts4:3,ts5:3},
     learnerFeedbackGood:'', learnerFeedbackGoal:'', evaluatorAutonomy:null, evaluatorPerformance:null, evaluatorDifficulty:null, evaluatorTS:{}, evaluatorFeedbackGood:'', evaluatorFeedbackGoal:'' },
@@ -305,7 +323,7 @@ function mockGasCall(data) {
   if (data.action === 'exportFacilityData') return Promise.resolve({ success:true, count:1, filename:'demo.csv', csv:'\uFEFF症例No.,術式\r\n001,デモ' });
   return new Promise(resolve => setTimeout(() => {
     if (data.action === 'getPending') {
-      resolve({ success:true, records: MOCK_RECORDS.map(r => ({ id:r.id, caseNo:r.caseNo, learnerName:r.learnerName, procedure:r.procedure, status:r.status, hasGoal: !!r.preOpGoal })) });
+      resolve({ success:true, records: MOCK_RECORDS.map(r => ({ id:r.id, caseNo:r.caseNo, learnerName:r.learnerName, procedure:r.procedure, surgeryDate:r.surgeryDate, status:r.status, hasGoal: !!r.preOpGoal })) });
     } else if (data.action === 'getRecord') {
       const rec = MOCK_RECORDS.find(r => r.id === data.recordId);
       resolve(rec ? { success:true, record: {...rec, canEditEvaluatorComment:true} } : { success:false, error:'Not found' });
