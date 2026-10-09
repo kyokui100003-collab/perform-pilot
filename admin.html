@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PERFORM 管理者ページ</title>
 <script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', sans-serif; background: #f0f4f8; color: #2d3748; min-height: 100vh; padding-bottom: 48px; }
@@ -40,6 +41,36 @@
   summary { cursor: pointer; font-weight: 700; }
   .loading, .err { padding: 40px; text-align: center; color: #718096; } .err { color: #c53030; }
   .panel { display: none; } .panel.active { display: block; }
+  .open-btn { background: white; color: #2c3e50; border: 1.5px solid #cbd5e0; border-radius: 6px; padding: 2px 10px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .open-btn:hover { background: #edf2f7; }
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 200; overflow-y: auto; padding: 20px 0 40px; }
+  .modal-overlay.show { display: block; }
+  .modal { background: white; border-radius: 16px; max-width: 680px; margin: 0 auto; width: 94%; overflow: hidden; }
+  .modal-hdr { background: #2c3e50; color: white; padding: 17px 22px; display: flex; align-items: center; justify-content: space-between; }
+  .modal-hdr h2 { font-size: 16px; }
+  .close-btn { background: none; border: none; color: white; font-size: 24px; cursor: pointer; line-height: 1; }
+  .modal-body { padding: 22px; font-size: 14px; }
+  .ro-note { background: #fffbea; border: 1px solid #f6e05e; color: #744210; border-radius: 8px; padding: 8px 12px; font-size: 12px; margin-bottom: 14px; }
+  .head-box { background: #f8f9fa; border-radius: 10px; padding: 13px 15px; margin-bottom: 16px; font-size: 13px; color: #555; line-height: 1.7; }
+  .cmp-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .cmp-table th { position: static; cursor: default; background: #f7fafc; font-size: 12px; padding: 7px 8px; white-space: normal; }
+  .cmp-table td { white-space: normal; padding: 7px 8px; }
+  .chip-l { background: #ebf8ff; color: #2b6cb0; border-radius: 6px; padding: 2px 8px; font-size: 12px; font-weight: 600; display: inline-block; }
+  .chip-e { background: #fdeceb; color: #c0392b; border-radius: 6px; padding: 2px 8px; font-size: 12px; font-weight: 600; display: inline-block; }
+  .num-l { color: #2b6cb0; font-weight: 800; } .num-e { color: #c0392b; font-weight: 800; }
+  .chart-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; margin: 16px 0; }
+  .chart-title { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+  .sec-hdr { font-size: 14px; font-weight: 800; margin: 18px 0 8px; padding-bottom: 4px; border-bottom: 2px solid #e2e8f0; }
+  .goal-box { background: #f0fff4; border-left: 3px solid #68d391; padding: 10px 12px; border-radius: 0 8px 8px 0; font-size: 13px; white-space: pre-wrap; }
+  .fb-mini-label { font-size: 11px; font-weight: 700; margin-bottom: 3px; } .fb-mini-good { color: #1d8a80; } .fb-mini-goal { color: #b8720f; }
+  .fb-box-l { background: #ebf8ff; border-left: 3px solid #63b3ed; padding: 10px 12px; border-radius: 0 8px 8px 0; font-size: 13px; white-space: pre-wrap; margin-bottom: 10px; }
+  .fb-box-e { background: #fdeceb; border-left: 3px solid #f1a9a0; padding: 10px 12px; border-radius: 0 8px 8px 0; font-size: 13px; white-space: pre-wrap; margin-bottom: 10px; }
+  .none-txt { font-size: 12.5px; color: #a0aec0; margin-bottom: 8px; }
+  .thread-item { display: flex; gap: 10px; margin: 10px 0; }
+  .thread-avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: white; flex-shrink: 0; }
+  .thread-avatar.learner { background: #3182ce; } .thread-avatar.evaluator { background: #c0392b; }
+  .thread-name { font-size: 12.5px; font-weight: 700; } .thread-time { font-size: 10.5px; color: #aaa; margin-left: 6px; font-weight: 400; }
+  .thread-text { font-size: 13.5px; margin-top: 3px; white-space: pre-wrap; line-height: 1.5; }
 </style>
 </head>
 <body>
@@ -92,6 +123,13 @@
       <span class="meta" id="metaCase"></span>
     </div>
     <div class="tbl-box"><table id="tblCase"></table></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="caseModal" onclick="if(event.target===this)closeCase()">
+  <div class="modal">
+    <div class="modal-hdr"><h2 id="caseModalTitle">症例の詳細</h2><button class="close-btn" onclick="closeCase()">×</button></div>
+    <div class="modal-body" id="caseModalBody"></div>
   </div>
 </div>
 
@@ -240,6 +278,7 @@ function renderUsr() { if (D) table('tblUsr', 'usr', USR_COLS, usrFiltered()); }
 
 // ---------- 症例一覧 ----------
 const CASE_COLS = [
+  { h: '詳細', v: c => '', html: c => `<button class="open-btn" onclick="openCase('${esc(c.id)}')">開く</button>` },
   { h: '施設コード', v: c => c.facilityCode },
   { h: '症例No.', v: c => c.caseNo },
   { h: '術式', v: c => c.procedure },
@@ -272,6 +311,85 @@ function renderCase() {
   const rows = caseFiltered();
   table('tblCase', 'case', CASE_COLS, rows);
   document.getElementById('metaCase').textContent = rows.length + ' 件';
+}
+
+// ---------- 症例の詳細（学習者・指導医の画面と同じ内容を読み取り専用で表示） ----------
+const AUTO_L_LEARNER   = ['','見学中心','補助を受けながら執刀','主体的に執刀（困った時のみ補助）','ほぼ単独で執刀'];
+const AUTO_L_EVALUATOR = ['','見せながら指導','積極的に介助','主体的に行わせ、困った時のみ介助','ほぼ任せて見守った'];
+const PERF_L = ['','準備不足','術式に不慣れ','中間的','自立','卓越'];
+const PERF_R = ['','Ⅰ','Ⅱ','Ⅲ','Ⅳ','Ⅴ'];
+const DIFF_L = ['','簡単','平均的','難しい'];
+const TS_N = ["組織への配慮", "時間と動作", "器具操作", "手術の流れ", "術式の知識"];
+let caseRadar = null;
+const fmtSD = s => { const m = String(s || '').match(/^(\d{4})-(\d{1,2})-(\d{1,2})/); return m ? `${m[1]}/${+m[2]}/${+m[3]}` : ''; };
+const fmtDT = iso => { try { const d = new Date(iso); return isNaN(d) ? '' : `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; } catch { return ''; } };
+const fmtD = iso => { try { const d = new Date(iso); return isNaN(d) ? '' : `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`; } catch { return ''; } };
+
+async function openCase(id) {
+  const c = D.cases.find(x => String(x.id) === String(id));
+  document.getElementById('caseModalTitle').textContent = c ? c.procedure : '症例の詳細';
+  document.getElementById('caseModalBody').innerHTML = '<div class="loading">読み込み中...</div>';
+  document.getElementById('caseModal').classList.add('show');
+  try {
+    const res = await gasCall({ action: 'getAdminCase', facilityCode, userId, pin, recordId: id });
+    if (!res.success) { document.getElementById('caseModalBody').innerHTML = `<div class="err">${esc(res.error || '取得に失敗しました')}</div>`; return; }
+    document.getElementById('caseModalTitle').textContent = res.record.procedure;
+    document.getElementById('caseModalBody').innerHTML = caseDetailHtml(res.record, res.comments || []);
+    drawCaseRadar(res.record);
+  } catch (e) { document.getElementById('caseModalBody').innerHTML = '<div class="err">接続エラー。しばらくしてから再試行してください。</div>'; }
+}
+function closeCase() {
+  document.getElementById('caseModal').classList.remove('show');
+  if (caseRadar) { caseRadar.destroy(); caseRadar = null; }
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCase(); });
+
+function compareTable(r) {
+  const tl = r.learnerTS || {}, te = r.evaluatorTS || {};
+  const row = (label, lv, ev, ll, el, roman) => `<tr><td style="font-size:12px;color:#555">${label}</td>
+    <td><span class="chip-l">${lv != null ? esc((roman ? (PERF_R[lv] || lv) : lv) + '：' + (ll[lv] || '')) : '未入力'}</span></td>
+    <td><span class="chip-e">${ev != null ? esc((roman ? (PERF_R[ev] || ev) : ev) + '：' + (el[ev] || '')) : '未入力'}</span></td></tr>`;
+  return `<table class="cmp-table"><tr><th>項目</th><th>学習者（自己）</th><th>指導医</th></tr>
+    ${row('自律度', r.learnerAutonomy, r.evaluatorAutonomy, AUTO_L_LEARNER, AUTO_L_EVALUATOR, false)}
+    ${row('術中パフォーマンス', r.learnerPerformance, r.evaluatorPerformance, PERF_L, PERF_L, true)}
+    ${row('症例難易度', r.learnerDifficulty, r.evaluatorDifficulty, DIFF_L, DIFF_L, false)}
+    ${[1, 2, 3, 4, 5].map(i => `<tr><td style="font-size:11px;color:#777">${esc(TS_N[i - 1])}</td><td><span class="num-l">${tl['ts' + i] || '-'}</span></td><td><span class="num-e">${te['ts' + i] || '-'}</span></td></tr>`).join('')}</table>`;
+}
+function fbBlock(good, goal, cls) {
+  const g = good ? `<div class="fb-mini-label fb-mini-good">① 良かった点</div><div class="${cls}">${esc(good)}</div>` : '';
+  const o = goal ? `<div class="fb-mini-label fb-mini-goal">② 次回の目標・改善点</div><div class="${cls}">${esc(goal)}</div>` : '';
+  return (g + o) || '<div class="none-txt">未入力</div>';
+}
+function threadHtml(list) {
+  if (!list.length) return '<div class="none-txt">コメントはありません。</div>';
+  return list.map(c => `<div class="thread-item"><div class="thread-avatar ${esc(c.authorRole)}">${esc((c.authorName || '?')[0])}</div>
+    <div style="flex:1;min-width:0"><div><span class="thread-name">${esc(c.authorName)}</span><span class="thread-time">${esc(fmtDT(c.postedAt))}${c.edited ? '（編集済み）' : ''}${c.likeCount ? '　👍 ' + c.likeCount : ''}</span></div>
+    <div class="thread-text">${esc(c.body)}</div></div></div>`).join('');
+}
+function caseDetailHtml(r, comments) {
+  const note = r.status === 'reviewed' ? '' : `<div class="ro-note">この症例は「${esc(STJ[r.status] || r.status)}」です。管理者には、入力済みの内容がすべて表示されます（指導医の画面では、評価完了までブラインドです）。</div>`;
+  const stars = r.commentRating ? `　／　指導医コメントへの評価: ${'★'.repeat(+r.commentRating)}${'☆'.repeat(Math.max(0, 5 - r.commentRating))}` : '';
+  return `${note}<div class="head-box"><strong>症例No.${esc(r.caseNo)}</strong>　${esc(r.procedure)}${r.surgeryDate ? '　／　手術日: ' + esc(fmtSD(r.surgeryDate)) : ''}<br>
+    ${esc(r.facilityCode)} ${esc(r.facilityName)}<br>学習者: ${esc(r.learnerName || '(不明)')}　／　指導医: ${esc(r.evaluatorName || '(不明)')}　／　状態: <span class="st st-${esc(r.status)}">${esc(STJ[r.status] || r.status)}</span>${r.reviewedAt ? '　／　評価完了日: ' + esc(fmtD(r.reviewedAt)) : ''}${stars}</div>
+    ${compareTable(r)}
+    <div class="chart-card"><div class="chart-title">Technical Scale レーダーチャート</div><canvas id="caseRadarCanvas" height="220"></canvas></div>
+    ${r.preOpGoal ? `<div class="sec-hdr">術前目標</div><div class="goal-box">${esc(r.preOpGoal)}</div>` : ''}
+    <div class="sec-hdr">学習者のフィードバック</div>${fbBlock(r.learnerFeedbackGood, r.learnerFeedbackGoal, 'fb-box-l')}
+    ${threadHtml(comments.filter(c => c.target === 'learner'))}
+    <div class="sec-hdr">指導医のフィードバック</div>${fbBlock(r.evaluatorFeedbackGood, r.evaluatorFeedbackGoal, 'fb-box-e')}
+    ${threadHtml(comments.filter(c => c.target === 'evaluator'))}`;
+}
+function drawCaseRadar(r) {
+  const canvas = document.getElementById('caseRadarCanvas');
+  if (!canvas || typeof Chart === 'undefined') return;
+  if (caseRadar) { caseRadar.destroy(); caseRadar = null; }
+  const tl = r.learnerTS || {}, te = r.evaluatorTS || {};
+  caseRadar = new Chart(canvas, { type: 'radar',
+    data: { labels: TS_N, datasets: [
+      { label: '学習者', data: [1, 2, 3, 4, 5].map(i => +(tl['ts' + i] || 0)), borderColor: '#2ab5a8', backgroundColor: 'rgba(42,181,168,.15)', pointRadius: 3 },
+      { label: '指導医', data: [1, 2, 3, 4, 5].map(i => +(te['ts' + i] || 0)), borderColor: '#c0392b', backgroundColor: 'rgba(192,57,43,.15)', pointRadius: 3 }] },
+    options: { responsive: true, maintainAspectRatio: true, scales: { r: { min: 0, max: 5, ticks: { stepSize: 1, font: { size: 10 } }, pointLabels: { font: { size: 10 } } } },
+      plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12 } } } } });
 }
 
 // ---------- CSV ----------
