@@ -146,7 +146,7 @@ const role = sessionStorage.getItem('role'), userId = sessionStorage.getItem('us
       pin = sessionStorage.getItem('pin');
 if (role !== 'admin' || !userId) location.href = 'index.html';
 document.getElementById('who').textContent = userName || '';
-function openDemo(sel) { if (sel.value) window.open(sel.value, '_blank'); sel.value = ''; }
+function openDemo(sel) { var v = sel.value; sel.value = ''; if (v) location.href = v; }
 function logout() { sessionStorage.clear(); location.href = 'index.html'; }
 
 let D = null;                       // サーバーから取得した全データ
