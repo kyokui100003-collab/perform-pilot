@@ -210,7 +210,7 @@
 <header>
   <div>
     <div class="logo">PERF<span>O</span>RM</div>
-    <div class="user-info" id="headerInfo"></div>
+    <div class="user-info" id="headerInfo" data-nofix="1"></div>
   </div>
   <button class="logout-btn" onclick="logout()">ログアウト</button>
 </header>
@@ -269,10 +269,12 @@ const GAS_URL = window.PERFORM_CONFIG.GAS_URL;
 // デモ表示（管理者の確認用）：URLに ?demo=1 を付けると、サンプルデータだけで動く。実データには接続せず、何も保存されない。
 (function () {
   try {
-    if (new URLSearchParams(location.search).get('demo') === '1') {
+    const qp = new URLSearchParams(location.search);
+    if (qp.get('demo') === '1') {
+      const asSelf = qp.get('self') === '1';
       sessionStorage.clear();
       sessionStorage.setItem('perform_demo', '1');
-      sessionStorage.setItem('role', 'learner'); sessionStorage.setItem('userId', 'usr_l01'); sessionStorage.setItem('userName', 'デモ 学習者');
+      sessionStorage.setItem('role', asSelf ? 'evaluator' : 'learner'); sessionStorage.setItem('userId', asSelf ? 'usr_e01' : 'usr_l01'); sessionStorage.setItem('userName', asSelf ? 'デモ 太郎' : 'デモ 学習者');
       sessionStorage.setItem('facilityCode', 'DEMO'); sessionStorage.setItem('facilityName', 'デモ施設'); sessionStorage.setItem('department', '消化器外科'); sessionStorage.setItem('pin', '0000');
     }
   } catch (e) {}
@@ -286,12 +288,34 @@ const facilityName = sessionStorage.getItem('facilityName') || '';
 const department   = sessionStorage.getItem('department')   || '';
 const pin          = sessionStorage.getItem('pin');
 
-if (role !== 'learner' || !userId) location.href = 'index.html';
+// 指導者の自己評価モード（?self=1）：指導医が、自分の症例を施設の指導医・学習者に評価してもらう
+const SELF_MODE = (() => { try { return new URLSearchParams(location.search).get('self') === '1'; } catch (e) { return false; } })();
+if (!userId || !(role === 'learner' || (SELF_MODE && role === 'evaluator'))) location.href = 'index.html';
+// 自己評価モードでの呼び方：指導医→評価者、学習者→指導者
+const SW = t => SELF_MODE ? String(t).replace(/指導医/g, '評価者').replace(/学習者/g, '指導者') : t;
 
 document.getElementById('headerInfo').innerHTML =
-  `<span class="role-badge">学習者</span>${userName}` +
+  `<span class="role-badge">${SELF_MODE ? '指導者（自己評価）' : '学習者'}</span>${userName}` +
   (department   ? `　<span style="opacity:0.65">|</span>　${department}`   : '') +
   (facilityName ? `　<span style="opacity:0.65">|</span>　${facilityName}` : '');
+
+if (SELF_MODE) {
+  const lb = document.querySelector('.logout-btn');
+  if (lb) {
+    const wrap = document.createElement('div'); wrap.style.cssText = 'display:flex;gap:8px;align-items:center';
+    lb.parentNode.insertBefore(wrap, lb);
+    const back = document.createElement('button'); back.className = 'logout-btn'; back.textContent = '‹ 指導医画面'; back.setAttribute('data-nofix', '1');
+    back.onclick = () => { location.href = 'evaluator.html' + (sessionStorage.getItem('perform_demo') === '1' ? '?demo=1' : ''); };
+    wrap.appendChild(back); wrap.appendChild(lb);
+  }
+  // 画面内の文言を置き換える（指導医→評価者、学習者→指導者）
+  const fix = root => {
+    const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let n; while ((n = w.nextNode())) { if (/指導医|学習者/.test(n.nodeValue) && !/^(SCRIPT|STYLE|TEXTAREA)$/.test(n.parentNode.nodeName) && !(n.parentNode.closest && n.parentNode.closest('[data-nofix]'))) n.nodeValue = SW(n.nodeValue); }
+  };
+  fix(document.body);
+  new MutationObserver(ms => ms.forEach(m => { m.addedNodes.forEach(nd => { if (nd.nodeType === 1) fix(nd); else if (nd.nodeType === 3 && nd.parentNode) fix(nd.parentNode); }); })).observe(document.body, { childList: true, subtree: true });
+}
 
 const DEMO_MODE = GAS_URL === 'YOUR_GAS_WEB_APP_URL_HERE' || sessionStorage.getItem('perform_demo') === '1';
 if (DEMO_MODE && sessionStorage.getItem('perform_demo') === '1') {
@@ -373,7 +397,24 @@ function buildProcedureOptionsForDept(dept, filterText, organ) {
     + `<option value="__custom__">その他（自由入力）</option>`;
 }
 
-const MOCK_EVALUATORS = [{ userId:'usr_e01', name:'デモ評価者1', department:'消化器外科' }];
+const MOCK_EVALUATORS = [
+  { userId:'usr_e02', name:'デモ評価者1', department:'消化器外科', role:'evaluator' },
+  { userId:'usr_l02', name:'デモ 次郎', department:'消化器外科', role:'learner' },
+];
+// 自己評価モード（指導者）で表示する症例：評価者が学習者（自由記述なし）／評価者が指導医（通常）
+const MOCK_SELF_RECORDS = [
+  { id:'s01', caseNo:'001', caseType:'upward', surgeryDate:'2026-10-01', procedure:'腹腔鏡下結腸切除術', status:'reviewed', preOpGoal:'', goalEntryMode:'',
+    learnerName:'デモ 太郎', evaluatorName:'デモ 次郎',
+    learnerAutonomy:4, learnerPerformance:4, learnerDifficulty:2, learnerTS:{ts1:4,ts2:4,ts3:5,ts4:4,ts5:4},
+    learnerFeedbackGood:'剥離層の確認を丁寧にできた', learnerFeedbackGoal:'',
+    evaluatorAutonomy:4, evaluatorPerformance:4, evaluatorDifficulty:2, evaluatorTS:{ts1:4,ts2:4,ts3:4,ts4:4,ts5:4}, evaluatorFeedbackGood:'', evaluatorFeedbackGoal:'', commentRating:null, isNew:true },
+  { id:'s02', caseNo:'002', caseType:'peer', surgeryDate:'2026-10-03', procedure:'腹腔鏡下胆嚢摘出術', status:'reviewed', preOpGoal:'', goalEntryMode:'',
+    learnerName:'デモ 太郎', evaluatorName:'デモ評価者1',
+    learnerAutonomy:4, learnerPerformance:4, learnerDifficulty:2, learnerTS:{ts1:4,ts2:4,ts3:4,ts4:4,ts5:4},
+    learnerFeedbackGood:'手技は安定していた', learnerFeedbackGoal:'術野展開をもう少し工夫したい',
+    evaluatorAutonomy:4, evaluatorPerformance:4, evaluatorDifficulty:2, evaluatorTS:{ts1:4,ts2:4,ts3:4,ts4:4,ts5:4},
+    evaluatorFeedbackGood:'安定した手技でした。', evaluatorFeedbackGoal:'助手への指示をより早めに出すと良いです。', commentRating:null, isNew:false },
+];
 const MOCK_RECORDS = [
   { id:'r01', caseNo:'001', surgeryDate:'2026-10-02', procedure:'腹腔鏡下胆嚢摘出術', status:'reviewed', preOpGoal:'クリッピングの手技を安定させる', goalEntryMode:'preop',
     learnerAutonomy:2, learnerPerformance:2, learnerDifficulty:2, learnerTS:{ts1:2,ts2:2,ts3:3,ts4:2,ts5:2},
@@ -401,7 +442,7 @@ function mockGasCall(data) {
     if (data.action === 'getEvaluators') resolve({ success:true, evaluators: MOCK_EVALUATORS });
     else if (data.action === 'getMyDrafts') resolve({ success:true, drafts: mockDraftStore });
     else if (data.action === 'startCase') {
-      const d = { id:'d'+Date.now(), caseNo:String(mockDraftStore.length+4).padStart(3,'0'), procedure:data.procedure, evaluatorId:data.evaluatorId, evaluatorName:'デモ評価者1', surgeryDate:data.surgeryDate||'', preOpGoal:data.goal||'', goalEntryMode: data.goal?'preop':'', createdAt:new Date().toISOString() };
+      const d = { id:'d'+Date.now(), caseNo:String(mockDraftStore.length+4).padStart(3,'0'), procedure:data.procedure, evaluatorId:data.evaluatorId, evaluatorName:(MOCK_EVALUATORS.find(e => e.userId === data.evaluatorId) || {}).name || 'デモ評価者1', surgeryDate:data.surgeryDate||'', preOpGoal:data.goal||'', goalEntryMode: data.goal?'preop':'', createdAt:new Date().toISOString() };
       mockDraftStore.push(d);
       resolve({ success:true, id:d.id, caseNo:d.caseNo });
     }
@@ -410,9 +451,13 @@ function mockGasCall(data) {
       resolve({ success:true, id:'r_new_'+Date.now(), caseNo:'00X' });
     }
     else if (data.action === 'saveLearnerDraft') resolve({ success:true });
-    else if (data.action === 'getLearnerInitialData') resolve({ success:true, evaluators: MOCK_EVALUATORS, drafts: mockDraftStore, results: MOCK_RECORDS.filter(r => r.status === 'reviewed') });
+    else if (data.action === 'getLearnerInitialData') resolve({ success:true,
+      evaluators: SELF_MODE ? MOCK_EVALUATORS : MOCK_EVALUATORS.filter(e => e.role === 'evaluator'),
+      drafts: mockDraftStore,
+      results: SELF_MODE ? MOCK_SELF_RECORDS : MOCK_RECORDS.filter(r => r.status === 'reviewed'),
+      ratingRequests: SELF_MODE ? [] : [{ id:'r03', caseNo:'001', procedure:'腹腔鏡下胃切除術', learnerName:'山田 一郎 先生', caseType:'upward' }] });
     else if (data.action === 'editLearnerComment') resolve({ success:true });
-    else if (data.action === 'getResults') resolve({ success:true, results: MOCK_RECORDS });
+    else if (data.action === 'getResults') resolve({ success:true, results: SELF_MODE ? MOCK_SELF_RECORDS : MOCK_RECORDS });
     else if (data.action === 'getComments') resolve({ success:true, comments: [
       { id:'c1', authorRole:'evaluator', authorName:'デモ評価者1', body:'次回は焦らず基本操作を確認しましょう。', postedAt:new Date().toISOString(), likeCount:1, likedByMe:false, target:'evaluator' }
     ]});
@@ -474,6 +519,7 @@ function switchSubTab(tab) {
 // =========================================================
 let myDrafts = [];
 let evaluatorsCache = [];
+let ratingRequests = [];   // 自分が評価者として依頼されている症例（指導者の自己評価）
 
 async function initForm() {
   const c = document.getElementById('formContainer');
@@ -486,6 +532,7 @@ async function initForm() {
     evaluatorsCache = res.evaluators;
     myDrafts = res.drafts;
     allResults = res.results;
+    ratingRequests = SELF_MODE ? [] : (res.ratingRequests || []);
     resultsLoaded = true;
     renderCaseList();
     renderResultList();
@@ -498,7 +545,10 @@ async function initForm() {
 // メールのリンクから来た場合：該当の症例の詳細を自動で開く
 function jumpToLinkedCase() {
   let id = '';
-  try { id = sessionStorage.getItem('jumpCase') || ''; sessionStorage.removeItem('jumpCase'); } catch (e) {}
+  try { id = sessionStorage.getItem('jumpCase') || ''; } catch (e) {}
+  // 自分が評価者として依頼された症例なら、評価の入力画面へ（症例IDは評価画面側で使う）
+  if (id && ratingRequests.some(x => String(x.id) === String(id))) { location.href = 'evaluator.html?rater=1'; return; }
+  try { sessionStorage.removeItem('jumpCase'); } catch (e) {}
   if (!id) return;
   const r = (allResults || []).find(x => String(x.id) === String(id));
   if (!r) return;   // 自分の症例でない／まだ評価前の場合は何もしない
@@ -517,7 +567,14 @@ function renderCaseList() {
       <div class="rc-meta">指導医: ${d.evaluatorName || '(不明)'}　|　${d.surgeryDate ? '手術日: ' + fmtSD(d.surgeryDate) : '開始日: ' + (fmtDate(d.createdAt) || '不明')}${d.preOpGoal ? '　🎯 術前目標あり' : ''}</div>
     </div>`).join('') : '';
 
+  const requestBanner = ratingRequests.length ? `
+    <div class="card" style="background:#fffbea;border:1.5px solid #f6d860;margin-bottom:14px">
+      <div class="card-title">評価依頼があります（${ratingRequests.length}件）</div>
+      <p style="font-size:13px;color:#555;margin-bottom:12px;line-height:1.6">指導者から、自己評価に対する評価を依頼されています。評価項目のみの入力で、自由記述はありません。</p>
+      <button class="submit-btn" onclick="location.href='evaluator.html?rater=1'+(sessionStorage.getItem('perform_demo')==='1'?'&demo=1':'')">評価を入力する</button>
+    </div>` : '';
   c.innerHTML = `
+    ${requestBanner}
     ${myDrafts.length ? `<div class="section-label">進行中の症例（${myDrafts.length}件）</div>${draftsHtml}` : ''}
     <div class="section-label">新しい症例</div>
     <div class="card" style="text-align:center">
@@ -526,11 +583,22 @@ function renderCaseList() {
     </div>`;
 }
 
+function updateRaterNote() {
+  const sel = document.getElementById('newEvalSel'), note = document.getElementById('raterNote');
+  if (!sel || !note) return;
+  const hit = evaluatorsCache.find(e => String(e.userId) === String(sel.value));
+  note.style.display = hit && hit.role === 'learner' ? '' : 'none';
+}
+
 function renderStartCase() {
   const c = document.getElementById('formContainer');
-  const opts = evaluatorsCache.length
-    ? evaluatorsCache.map(e => `<option value="${e.userId}">${e.name}${e.department?' ('+e.department+')':''}</option>`).join('')
-    : '<option value="">（指導医が登録されていません）</option>';
+  const mkOpt = e => `<option value="${e.userId}">${e.name}${e.department?' ('+e.department+')':''}</option>`;
+  let opts;
+  if (!evaluatorsCache.length) opts = '<option value="">（指導医が登録されていません）</option>';
+  else if (SELF_MODE) {
+    const evs = evaluatorsCache.filter(e => e.role === 'evaluator'), lns = evaluatorsCache.filter(e => e.role === 'learner');
+    opts = (evs.length ? `<optgroup label="指導医">${evs.map(mkOpt).join('')}</optgroup>` : '') + (lns.length ? `<optgroup label="学習者">${lns.map(mkOpt).join('')}</optgroup>` : '');
+  } else opts = evaluatorsCache.map(mkOpt).join('');
 
   c.innerHTML = `
     <button class="text-link-btn" onclick="renderCaseList()">‹ 症例一覧に戻る</button>
@@ -570,7 +638,8 @@ function renderStartCase() {
         <datalist id="procHistoryList"></datalist>
       </div>
       <label>担当指導医 <span class="required">*</span></label>
-      <select id="newEvalSel"><option value="">指導医を選択...</option>${opts}</select>
+      <select id="newEvalSel"${SELF_MODE ? ' onchange="updateRaterNote()"' : ''}><option value="">指導医を選択...</option>${opts}</select>
+      ${SELF_MODE ? '<p class="hint" id="raterNote" style="display:none;margin-top:-6px">学習者を評価者に選んだ場合は、評価者の自由記述・コメント機能・★評価はなく、評価項目のみの評価になります。</p>' : ''}
       <label>手術日 <span class="required">*</span></label>
       <input type="date" id="newSurgeryDate" value="${todayStr()}">
     </div>
@@ -890,7 +959,7 @@ async function startCaseAction(goalOnly) {
   const goal = document.getElementById('newGoal').value.trim();
   const surgeryDate = document.getElementById('newSurgeryDate').value;
   if (!proc.text) { alert('術式を入力（または選択）してください'); return; }
-  if (!evaluatorId) { alert('担当指導医を選択してください'); return; }
+  if (!evaluatorId) { alert(SELF_MODE ? '評価者を選択してください' : '担当指導医を選択してください'); return; }
   if (!surgeryDate) { alert('手術日を入力してください'); return; }
 
   // 評価フォームへ進んでから送信するまでの間、選択内容を保持しておく（NCDコードは
@@ -1138,7 +1207,7 @@ function openResult(r) {
   setTimeout(() => drawModalRadar(r), 50);
   document.getElementById('resultModal').classList.add('show');
   if (!modalHistoryPushed) { history.pushState({ modal: true }, ''); modalHistoryPushed = true; }
-  loadThread(r.id);
+  if (r.caseType !== 'upward') loadThread(r.id);
   if (r.isNew) {
     r.isNew = false;
     const cached = allResults.find(x => x.id === r.id);
@@ -1205,7 +1274,7 @@ function renderResultDetail(r) {
       <div class="btn-row"><button class="submit-btn" onclick="saveLearnerComment('${r.id}')">保存する</button></div>
       <div class="edit-window-note">※ コメント送信から72時間以内のみ編集できます</div>
     </div>
-    <div class="thread" id="threadArea-learner"></div>
+    ${r.caseType === 'upward' ? '' : `<div class="thread" id="threadArea-learner"></div>
     <div class="thread-input-row">
       <textarea id="newCommentBody-learner" placeholder="このフィードバックにコメントを追加..."></textarea>
       <button class="thread-send-btn" onclick="postComment('${r.id}','learner', this)">送信</button>
@@ -1225,7 +1294,7 @@ function renderResultDetail(r) {
       <div class="star-row" id="starRow">${[1,2,3,4,5].map(n=>`<button class="star-btn ${(r.commentRating||0)>=n?'active':''}" data-n="${n}" onclick="rateComment('${r.id}',${n})">★</button>`).join('')}</div>
       <div class="rate-done" id="rateStatus">${r.commentRating ? '★ '+r.commentRating+' と評価済みです（星を押すといつでも選び直せます）' : ''}</div>
       <div class="rate-privacy-note">※ この評価は指導医には共有されません</div>
-    </div>
+    </div>`}
   `;
 }
 
@@ -1399,8 +1468,8 @@ function drawModalRadar(r) {
   modalRadarChart = new Chart(ctx, {
     type: 'radar',
     data: { labels: TS_N, datasets: [
-      { label:'学習者', data: dataL, borderColor:'#3182ce', backgroundColor:'rgba(49,130,206,0.15)', pointBackgroundColor:'#3182ce', pointRadius:4 },
-      { label:'指導医', data: dataE, borderColor:'#c0392b', backgroundColor:'rgba(192,57,43,0.15)',  pointBackgroundColor:'#c0392b', pointRadius:4 }
+      { label:SW('学習者'), data: dataL, borderColor:'#3182ce', backgroundColor:'rgba(49,130,206,0.15)', pointBackgroundColor:'#3182ce', pointRadius:4 },
+      { label:SW('指導医'), data: dataE, borderColor:'#c0392b', backgroundColor:'rgba(192,57,43,0.15)',  pointBackgroundColor:'#c0392b', pointRadius:4 }
     ]},
     options: { responsive:true, plugins:{ legend:{ position:'bottom', labels:{ font:{size:11} } } },
       scales:{ r:{ min:0, max:5, ticks:{ stepSize:1, font:{size:10} }, pointLabels:{ font:{size:10} } } } }
@@ -1487,8 +1556,8 @@ function renderLineChart(records) {
   lineChartInstance = new Chart(ctx, {
     type: 'line',
     data: { labels, datasets: [
-      { label:'パフォーマンス（学習者）', data: dodge(learnerRaw, -1),   rawData: learnerRaw,   borderColor:'#3182ce', backgroundColor:'rgba(49,130,206,0.08)', tension:0.3, pointRadius:6, fill:true },
-      { label:'パフォーマンス（指導医）', data: dodge(evaluatorRaw, 1), rawData: evaluatorRaw, borderColor:'#c0392b', backgroundColor:'rgba(192,57,43,0.08)',  tension:0.3, pointRadius:6, fill:true },
+      { label:SW('パフォーマンス（学習者）'), data: dodge(learnerRaw, -1),   rawData: learnerRaw,   borderColor:'#3182ce', backgroundColor:'rgba(49,130,206,0.08)', tension:0.3, pointRadius:6, fill:true },
+      { label:SW('パフォーマンス（指導医）'), data: dodge(evaluatorRaw, 1), rawData: evaluatorRaw, borderColor:'#c0392b', backgroundColor:'rgba(192,57,43,0.08)',  tension:0.3, pointRadius:6, fill:true },
     ]},
     options: { responsive:true,
       plugins:{ legend:{ position:'bottom', labels:{ font:{size:11} } },
@@ -1509,8 +1578,8 @@ function renderTSLineChart(records) {
   tsLineChartInstance = new Chart(ctx, {
     type: 'line',
     data: { labels, datasets: [
-      { label:'TS平均（学習者）', data: dodge(learnerRaw, -1),   rawData: learnerRaw,   borderColor:'#3182ce', backgroundColor:'rgba(49,130,206,0.08)', tension:0.3, pointRadius:6, fill:true },
-      { label:'TS平均（指導医）', data: dodge(evaluatorRaw, 1), rawData: evaluatorRaw, borderColor:'#c0392b', backgroundColor:'rgba(192,57,43,0.08)',  tension:0.3, pointRadius:6, fill:true },
+      { label:SW('TS平均（学習者）'), data: dodge(learnerRaw, -1),   rawData: learnerRaw,   borderColor:'#3182ce', backgroundColor:'rgba(49,130,206,0.08)', tension:0.3, pointRadius:6, fill:true },
+      { label:SW('TS平均（指導医）'), data: dodge(evaluatorRaw, 1), rawData: evaluatorRaw, borderColor:'#c0392b', backgroundColor:'rgba(192,57,43,0.08)',  tension:0.3, pointRadius:6, fill:true },
     ]},
     options: { responsive:true,
       plugins:{ legend:{ position:'bottom', labels:{ font:{size:11} } },
@@ -1529,8 +1598,8 @@ function renderRadarChart(records) {
   radarChartInstance = new Chart(ctx, {
     type:'radar',
     data:{ labels: TS_N, datasets:[
-      { label:'学習者（平均）', data:avgL, borderColor:'#3182ce', backgroundColor:'rgba(49,130,206,0.15)', pointBackgroundColor:'#3182ce', pointRadius:4 },
-      { label:'指導医（平均）', data:avgE, borderColor:'#c0392b', backgroundColor:'rgba(192,57,43,0.15)',  pointBackgroundColor:'#c0392b', pointRadius:4 }
+      { label:SW('学習者（平均）'), data:avgL, borderColor:'#3182ce', backgroundColor:'rgba(49,130,206,0.15)', pointBackgroundColor:'#3182ce', pointRadius:4 },
+      { label:SW('指導医（平均）'), data:avgE, borderColor:'#c0392b', backgroundColor:'rgba(192,57,43,0.15)',  pointBackgroundColor:'#c0392b', pointRadius:4 }
     ]},
     options:{ responsive:true, plugins:{ legend:{ position:'bottom', labels:{font:{size:11}} } },
       scales:{ r:{ min:0, max:5, ticks:{ stepSize:1, font:{size:10} }, pointLabels:{ font:{size:11} } } } }

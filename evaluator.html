@@ -197,7 +197,7 @@
 <header>
   <div>
     <div class="logo">PERF<span>O</span>RM</div>
-    <div class="user-info" id="headerInfo"></div>
+    <div class="user-info" id="headerInfo" data-nofix="1"></div>
   </div>
   <button class="logout-btn" onclick="logout()">ログアウト</button>
 </header>
@@ -268,10 +268,12 @@ const GAS_URL = window.PERFORM_CONFIG.GAS_URL;
 // デモ表示（管理者の確認用）：URLに ?demo=1 を付けると、サンプルデータだけで動く。実データには接続せず、何も保存されない。
 (function () {
   try {
-    if (new URLSearchParams(location.search).get('demo') === '1') {
+    const qp = new URLSearchParams(location.search);
+    if (qp.get('demo') === '1') {
+      const asRater = qp.get('rater') === '1';
       sessionStorage.clear();
       sessionStorage.setItem('perform_demo', '1');
-      sessionStorage.setItem('role', 'evaluator'); sessionStorage.setItem('userId', 'usr_e01'); sessionStorage.setItem('userName', 'デモ 指導医');
+      sessionStorage.setItem('role', asRater ? 'learner' : 'evaluator'); sessionStorage.setItem('userId', asRater ? 'usr_l02' : 'usr_e01'); sessionStorage.setItem('userName', asRater ? 'デモ 次郎' : 'デモ 指導医');
       sessionStorage.setItem('facilityCode', 'DEMO'); sessionStorage.setItem('facilityName', 'デモ施設'); sessionStorage.setItem('department', '消化器外科'); sessionStorage.setItem('pin', '0000');
     }
   } catch (e) {}
@@ -285,12 +287,29 @@ const facilityName = sessionStorage.getItem('facilityName') || '';
 const department   = sessionStorage.getItem('department')   || '';
 const pin          = sessionStorage.getItem('pin');
 
-if (role !== 'evaluator' || !userId) location.href = 'index.html';
+// 学習者が、指導者の自己評価に対して「評価者」として入力する画面（?rater=1）
+const RATER_MODE = (() => { try { return new URLSearchParams(location.search).get('rater') === '1'; } catch (e) { return false; } })();
+if (!userId || !(role === 'evaluator' || (RATER_MODE && role === 'learner'))) location.href = 'index.html';
+// 評価される側の呼び方：通常は学習者、指導者の自己評価の症例では指導者
+const rateeWord = r => (RATER_MODE || (r && r.caseType)) ? '指導者' : '学習者';
 
 document.getElementById('headerInfo').innerHTML =
-  `<span class="role-badge">指導医</span>${userName}` +
+  `<span class="role-badge">${RATER_MODE ? '評価者' : '指導医'}</span>${userName}` +
   (department   ? `　<span style="opacity:0.65">|</span>　${department}`   : '') +
   (facilityName ? `　<span style="opacity:0.65">|</span>　${facilityName}` : '');
+
+// ヘッダーのボタン：評価者モードでは学習者画面へ戻る。指導医は「自己評価」（自分の症例を評価してもらう画面）へ移動できる
+{
+  const lb = document.querySelector('.logout-btn');
+  if (lb) {
+    const wrap = document.createElement('div'); wrap.style.cssText = 'display:flex;gap:8px;align-items:center';
+    lb.parentNode.insertBefore(wrap, lb);
+    const nav = document.createElement('button'); nav.className = 'logout-btn';
+    if (RATER_MODE) { nav.textContent = '‹ 学習者画面'; nav.setAttribute('data-nofix', '1'); nav.onclick = () => { location.href = 'learner.html' + (sessionStorage.getItem('perform_demo') === '1' ? '?demo=1' : ''); }; }
+    else { nav.textContent = '自己評価'; nav.title = '自分の症例を、施設の指導医・学習者に評価してもらう'; nav.onclick = () => { location.href = 'learner.html?self=1' + (sessionStorage.getItem('perform_demo') === '1' ? '&demo=1' : ''); }; }
+    wrap.appendChild(nav); wrap.appendChild(lb);
+  }
+}
 
 const DEMO_MODE = GAS_URL === 'YOUR_GAS_WEB_APP_URL_HERE' || sessionStorage.getItem('perform_demo') === '1';
 if (DEMO_MODE && sessionStorage.getItem('perform_demo') === '1') {
@@ -311,7 +330,24 @@ const MOCK_RECORDS = [
     preOpGoal:'', goalEntryMode:'', hasGoal:false,
     learnerAutonomy:2, learnerPerformance:3, learnerDifficulty:2, learnerTS:{ts1:3,ts2:3,ts3:3,ts4:3,ts5:3},
     learnerFeedbackGood:'', learnerFeedbackGoal:'', evaluatorAutonomy:null, evaluatorPerformance:null, evaluatorDifficulty:null, evaluatorTS:{}, evaluatorFeedbackGood:'', evaluatorFeedbackGoal:'' },
+  // 指導者の自己評価（評価者が学習者：自由記述・コメントなし）
+  { id:'r03', caseNo:'001', caseType:'upward', surgeryDate:'2026-10-07', learnerId:'usr_e02', learnerName:'山田 一郎 先生', procedure:'腹腔鏡下胃切除術', status:'pending',
+    preOpGoal:'', goalEntryMode:'', hasGoal:false, evaluatorName:'デモ 次郎',
+    learnerAutonomy:4, learnerPerformance:4, learnerDifficulty:3, learnerTS:{ts1:4,ts2:4,ts3:4,ts4:4,ts5:4},
+    learnerFeedbackGood:'', learnerFeedbackGoal:'', evaluatorAutonomy:null, evaluatorPerformance:null, evaluatorDifficulty:null, evaluatorTS:{}, evaluatorFeedbackGood:'', evaluatorFeedbackGoal:'' },
+  { id:'r04', caseNo:'002', caseType:'upward', surgeryDate:'2026-10-01', learnerId:'usr_e02', learnerName:'山田 一郎 先生', procedure:'腹腔鏡下結腸切除術', status:'reviewed', evaluatorName:'デモ 次郎',
+    preOpGoal:'', goalEntryMode:'',
+    learnerAutonomy:4, learnerPerformance:4, learnerDifficulty:2, learnerTS:{ts1:4,ts2:4,ts3:5,ts4:4,ts5:4},
+    learnerFeedbackGood:'剥離層の確認を丁寧にできた', learnerFeedbackGoal:'',
+    evaluatorAutonomy:4, evaluatorPerformance:4, evaluatorDifficulty:2, evaluatorTS:{ts1:4,ts2:4,ts3:4,ts4:4,ts5:4}, evaluatorFeedbackGood:'', evaluatorFeedbackGoal:'', canEditEvaluatorComment:false },
+  // 指導者の自己評価（評価者が指導医：通常どおり）
+  { id:'r05', caseNo:'003', caseType:'peer', surgeryDate:'2026-10-06', learnerId:'usr_e03', learnerName:'佐藤 三郎 先生', procedure:'腹腔鏡下胆嚢摘出術', status:'pending',
+    preOpGoal:'', goalEntryMode:'', hasGoal:false, evaluatorName:'デモ 太郎',
+    learnerAutonomy:4, learnerPerformance:4, learnerDifficulty:2, learnerTS:{ts1:4,ts2:4,ts3:4,ts4:4,ts5:4},
+    learnerFeedbackGood:'', learnerFeedbackGoal:'', evaluatorAutonomy:null, evaluatorPerformance:null, evaluatorDifficulty:null, evaluatorTS:{}, evaluatorFeedbackGood:'', evaluatorFeedbackGoal:'' },
 ];
+// デモ表示では、画面の種類に合う症例だけを使う（評価者モード＝指導者の自己評価で学習者が評価者の症例／通常＝それ以外）
+const MOCK_VIEW = () => MOCK_RECORDS.filter(r => RATER_MODE ? r.caseType === 'upward' : r.caseType !== 'upward');
 
 async function gasCall(data) {
   if (DEMO_MODE) return mockGasCall(data);
@@ -323,9 +359,9 @@ function mockGasCall(data) {
   if (data.action === 'exportFacilityData') return Promise.resolve({ success:true, count:1, filename:'demo.csv', csv:'\uFEFF症例No.,術式\r\n001,デモ' });
   return new Promise(resolve => setTimeout(() => {
     if (data.action === 'getPending') {
-      resolve({ success:true, records: MOCK_RECORDS.map(r => ({ id:r.id, caseNo:r.caseNo, learnerName:r.learnerName, procedure:r.procedure, surgeryDate:r.surgeryDate, status:r.status, hasGoal: !!r.preOpGoal })) });
+      resolve({ success:true, records: MOCK_VIEW().map(r => ({ id:r.id, caseNo:r.caseNo, learnerName:r.learnerName, procedure:r.procedure, surgeryDate:r.surgeryDate, status:r.status, hasGoal: !!r.preOpGoal, caseType:r.caseType||'' })) });
     } else if (data.action === 'getRecord') {
-      const rec = MOCK_RECORDS.find(r => r.id === data.recordId);
+      const rec = MOCK_VIEW().find(r => r.id === data.recordId);
       resolve(rec ? { success:true, record: {...rec, canEditEvaluatorComment:true} } : { success:false, error:'Not found' });
     } else if (data.action === 'submitEvaluator') {
       resolve({ success:true });
@@ -333,7 +369,7 @@ function mockGasCall(data) {
       resolve({ success:true });
     } else if (data.action === 'getLearnerSummary' || data.action === 'getFacilityLearnerSummary') {
       const map = {};
-      MOCK_RECORDS.forEach(r => {
+      MOCK_VIEW().forEach(r => {
         if (!map[r.learnerId]) map[r.learnerId] = { learnerId:r.learnerId, learnerName:r.learnerName, records:[], reviewed:0, pending:0, total:0 };
         const l = map[r.learnerId];
         if (r.status === 'reviewed') { l.records.push(r); l.reviewed++; l.total++; }
@@ -341,7 +377,7 @@ function mockGasCall(data) {
       });
       resolve({ success:true, learners: Object.values(map).filter(l => l.records.length || l.pending) });
     } else if (data.action === 'getResults') {
-      resolve({ success:true, results: MOCK_RECORDS.filter(r => r.status === 'reviewed') });
+      resolve({ success:true, results: MOCK_VIEW().filter(r => r.status === 'reviewed') });
     } else if (data.action === 'getComments') {
       resolve({ success:true, comments: [
         { id:'c1', authorRole:'learner', authorName:'田中 太郎', body:'視野展開についてもう少しコツを教えてください。', postedAt:new Date().toISOString(), likeCount:0, likedByMe:false, target:'evaluator' }
@@ -389,6 +425,17 @@ const ROMAN = ['','Ⅰ','Ⅱ','Ⅲ','Ⅳ','Ⅴ'];
 // -------------------------------------------------------
 // タブ切り替え
 // -------------------------------------------------------
+// 評価者モード（学習者が指導者を評価する）では、推移グラフ・施設全体・CSVは出さず、文言を「学習者→指導者」に置き換える
+if (RATER_MODE) {
+  ['stb-chart', 'scope-facility', 'csvDownloadBtn'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+  const sw = document.querySelector('.scope-toggle'); if (sw) sw.style.display = 'none';
+  const fix = root => {
+    const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let n; while ((n = w.nextNode())) { if (n.nodeValue.indexOf('学習者') >= 0 && !/^(SCRIPT|STYLE|TEXTAREA)$/.test(n.parentNode.nodeName) && !(n.parentNode.closest && n.parentNode.closest('[data-nofix]'))) n.nodeValue = n.nodeValue.replace(/学習者/g, '指導者'); }
+  };
+  fix(document.body);
+  new MutationObserver(ms => ms.forEach(m => { m.addedNodes.forEach(nd => { if (nd.nodeType === 1) fix(nd); else if (nd.nodeType === 3 && nd.parentNode) fix(nd.parentNode); }); })).observe(document.body, { childList: true, subtree: true });
+}
 const TAB_IDS = ['cases','results'];
 let loaded = { cases: false, results: false };
 
@@ -432,7 +479,7 @@ function caseCard(r, isPending) {
       <span class="card-title">${r.procedure}${r.hasGoal ? '<span class="badge-goal">🎯 目標あり</span>' : ''}</span>
       ${isPending ? '<span class="badge-new">未評価</span>' : '<span class="badge-done">評価済み</span>'}
     </div>
-    <div class="card-meta">症例No.${r.caseNo}　学習者: ${r.learnerName || '(不明)'}${r.surgeryDate ? '　|　手術日: '+fmtSD(r.surgeryDate) : ''}${r.submittedAt ? '　|　依頼日: '+fmtDate(r.submittedAt) : ''}</div>
+    <div class="card-meta">症例No.${r.caseNo}　${rateeWord(r)}: ${r.learnerName || '(不明)'}${r.caseType ? '（自己評価）' : ''}${r.surgeryDate ? '　|　手術日: '+fmtSD(r.surgeryDate) : ''}${r.submittedAt ? '　|　依頼日: '+fmtDate(r.submittedAt) : ''}</div>
   </div>`;
 }
 
@@ -568,7 +615,7 @@ function openResultById(id, r) {
   document.getElementById('resultModalBody').innerHTML = renderResultDetail(r);
   document.getElementById('resultModal').classList.add('show');
   if (!modalHistoryPushed) { history.pushState({ modal: true }, ''); modalHistoryPushed = true; }
-  loadThread(r.id);
+  if (r.caseType !== 'upward') loadThread(r.id);
 }
 
 // -------------------------------------------------------
@@ -595,27 +642,30 @@ async function openEvalModal(id) {
 
 function renderEvalForm(r) {
   const isReviewed = r.status === 'reviewed';
-  const editable = !isReviewed || r.canEditEvaluatorComment;
+  const up = r.caseType === 'upward';                      // 指導者の自己評価で、評価者が学習者（自由記述・コメントなし）
+  const W = rateeWord(r);                                  // 評価される側の呼び方
+  const canEditC = !!r.canEditEvaluatorComment && !up;
+  const editable = !isReviewed || canEditC;
   const ets = r.evaluatorTS || {};
   const dis = isReviewed ? 'disabled' : '';
 
   const compareHtml = isReviewed ? `
-    <div class="sec-hdr" style="color:#1d8a80;border-color:#b2ead6">学習者の自己評価 ↔ あなたの評価</div>
+    <div class="sec-hdr" style="color:#1d8a80;border-color:#b2ead6">${W}の自己評価 ↔ あなたの評価</div>
     ${buildCompareTable(r)}
-    ${r.learnerFeedbackGood ? `<div class="fb-mini-label fb-mini-good">学習者：① 良かった点</div><div class="fb-box-l">${r.learnerFeedbackGood}</div>` : ''}
-    ${r.learnerFeedbackGoal ? `<div class="fb-mini-label fb-mini-goal">学習者：② 次回の目標</div><div class="fb-box-l">${r.learnerFeedbackGoal}</div>` : ''}` : '';
+    ${r.learnerFeedbackGood ? `<div class="fb-mini-label fb-mini-good">${W}：① 良かった点</div><div class="fb-box-l">${r.learnerFeedbackGood}</div>` : ''}
+    ${r.learnerFeedbackGoal ? `<div class="fb-mini-label fb-mini-goal">${W}：② 次回の目標</div><div class="fb-box-l">${r.learnerFeedbackGoal}</div>` : ''}` : '';
 
   document.getElementById('evalModalBody').innerHTML = `
     ${!isReviewed
-      ? `<div class="blind-notice">⚠️ <strong>ブラインド評価モード</strong><br>学習者の自己評価は評価完了まで非表示です。独立した評価を入力してください。</div>`
-      : `<div class="reviewed-box">✅ 評価済み。学習者スコアとの比較が表示されています。${r.canEditEvaluatorComment ? '（コメントは送信後72時間以内のため編集できます）' : ''}</div>`}
+      ? `<div class="blind-notice">⚠️ <strong>ブラインド評価モード</strong><br>${W}の自己評価は評価完了まで非表示です。独立した評価を入力してください。</div>`
+      : `<div class="reviewed-box">✅ 評価済み。${W}のスコアとの比較が表示されています。${canEditC ? '（コメントは送信後72時間以内のため編集できます）' : ''}</div>`}
 
     <div class="info-grid">
       <div class="info-item"><label>症例No.</label><span>${r.caseNo}</span></div>
       <div class="info-item"><label>術式</label><span>${r.procedure}</span></div>
       ${r.surgeryDate ? `<div class="info-item"><label>手術日</label><span>${fmtSD(r.surgeryDate)}</span></div>` : ''}
-      <div class="info-item"><label>学習者</label><span>${r.learnerName}</span></div>
-      <div class="info-item"><label>指導医</label><span>${r.evaluatorName}</span></div>
+      <div class="info-item"><label>${W}</label><span>${r.learnerName}</span></div>
+      <div class="info-item"><label>${r.caseType ? '評価者' : '指導医'}</label><span>${r.evaluatorName}</span></div>
     </div>
 
     ${r.preOpGoal ? `<div class="sec-hdr">術前目標</div><div class="goal-box"><div class="goal-text">${r.preOpGoal}</div></div>` : ''}
@@ -649,11 +699,13 @@ function renderEvalForm(r) {
         <div class="osats-en-list">${[1,3,5].map(v => `<div><b>${v}</b><span>${item.anchorsEn[v]}</span></div>`).join('')}</div>
       </div>`; }).join('')}
 
-    <div class="sec-hdr">フィードバック${!isReviewed || r.canEditEvaluatorComment ? '' : ''}</div>
+    ${up ? `<div class="sec-hdr">フィードバック</div>
+    <div class="blind-notice" style="background:#f0f7ff;border-color:#bee3f8;color:#2c5282">指導者の自己評価では、学習者が評価者の場合、自由記述（コメント）はありません。上の評価項目だけで送信できます。</div>
+    <div style="display:none"><textarea id="fbGoodE"></textarea><textarea id="fbGoalE"></textarea></div>` : `<div class="sec-hdr">フィードバック</div>
     <label>① 良かった点</label>
     <textarea id="fbGoodE" ${!editable?'readonly':''} placeholder="うまくできていた点など">${r.evaluatorFeedbackGood||''}</textarea>
     <label>② 次回の目標・改善点</label>
-    <textarea id="fbGoalE" ${!editable?'readonly':''} placeholder="次回に向けて意識してほしいことなど">${r.evaluatorFeedbackGoal||''}</textarea>
+    <textarea id="fbGoalE" ${!editable?'readonly':''} placeholder="次回に向けて意識してほしいことなど">${r.evaluatorFeedbackGoal||''}</textarea>`}
 
     ${!isReviewed ? `
     <div class="btn-row">
@@ -663,9 +715,9 @@ function renderEvalForm(r) {
       </button>
     </div>
     <button class="save-btn" id="saveBtn" onclick="saveEval()">
-      <span id="saveLabel">評価を保存して学習者に通知</span>
+      <span id="saveLabel">評価を保存して${W}に通知</span>
       <div class="spinner" id="saveSpinner"></div>
-    </button>` : (r.canEditEvaluatorComment ? `
+    </button>` : (canEditC ? `
     <button class="save-btn" id="saveBtn" onclick="saveEditedComment()">
       <span id="saveLabel">コメントの修正を保存</span>
       <div class="spinner" id="saveSpinner"></div>
@@ -740,7 +792,7 @@ async function saveEval() {
     alert('接続エラーが発生しました。');
   } finally {
     const b = document.getElementById('saveBtn');
-    if (b) { b.disabled = false; document.getElementById('saveSpinner').style.display = 'none'; document.getElementById('saveLabel').textContent = '評価を保存して学習者に通知'; }
+    if (b) { b.disabled = false; document.getElementById('saveSpinner').style.display = 'none'; document.getElementById('saveLabel').textContent = '評価を保存して' + rateeWord(currentRecord) + 'に通知'; }
   }
 }
 
@@ -800,7 +852,7 @@ function buildCompareTable(r) {
     </tr>`;
   return `
   <table class="cmp-table">
-    <tr><th>項目</th><th>学習者（自己）</th><th>指導医（あなた）</th></tr>
+    <tr><th>項目</th><th>${rateeWord(r)}（自己）</th><th>${r.caseType || RATER_MODE ? '評価者' : '指導医'}（あなた）</th></tr>
     ${row('自律度',           r.learnerAutonomy,    r.evaluatorAutonomy,    AUTO_L_LEARNER, AUTO_L_EVALUATOR, false)}
     ${row('術中パフォーマンス', r.learnerPerformance, r.evaluatorPerformance, PERF_L, PERF_L, true)}
     ${row('症例難易度',        r.learnerDifficulty,  r.evaluatorDifficulty,  DIFF_L, DIFF_L, false)}
@@ -818,7 +870,7 @@ function renderResultDetail(r) {
   return `
     <div style="background:#f8f9fa;border-radius:10px;padding:13px 15px;margin-bottom:16px;font-size:13px;color:#555;line-height:1.7">
       <strong>症例No.${r.caseNo}</strong>　${r.procedure}${r.surgeryDate ? '　／　手術日: '+fmtSD(r.surgeryDate) : ''}<br>
-      学習者: ${r.learnerName || '(不明)'}　／　指導医: ${r.evaluatorName || '(不明)'}${r.reviewedAt ? '　／　評価完了日: '+(fmtDate(r.reviewedAt)||'未評価') : ''}
+      ${rateeWord(r)}: ${r.learnerName || '(不明)'}　／　${r.caseType ? '評価者' : '指導医'}: ${r.evaluatorName || '(不明)'}${r.reviewedAt ? '　／　評価完了日: '+(fmtDate(r.reviewedAt)||'未評価') : ''}
     </div>
     ${buildCompareTable(r)}
     <div class="chart-card" style="margin-top:16px;margin-bottom:16px">
@@ -827,23 +879,23 @@ function renderResultDetail(r) {
     </div>
     ${r.preOpGoal ? `<div class="sec-hdr">術前目標</div><div class="goal-box"><div class="goal-text">${r.preOpGoal}</div></div>` : ''}
 
-    <div class="sec-hdr">学習者のフィードバック</div>
+    <div class="sec-hdr">${rateeWord(r)}のフィードバック</div>
     ${r.learnerFeedbackGood ? `<div class="fb-mini-label fb-mini-good">① 良かった点</div><div class="fb-box-l">${r.learnerFeedbackGood}</div>` : ''}
     ${r.learnerFeedbackGoal ? `<div class="fb-mini-label fb-mini-goal">② 次回の目標・改善点</div><div class="fb-box-l">${r.learnerFeedbackGoal}</div>` : ''}
-    <div class="thread" id="threadArea-learner"></div>
+    ${r.caseType === 'upward' ? '' : `<div class="thread" id="threadArea-learner"></div>
     <div class="thread-input-row">
       <textarea id="newCommentBody-learner" placeholder="このフィードバックにコメントを追加..."></textarea>
       <button class="thread-send-btn" onclick="postComment('${r.id}','learner', this)">送信</button>
     </div>
 
-    <div class="sec-hdr" style="margin-top:22px">指導医のフィードバック</div>
+    <div class="sec-hdr" style="margin-top:22px">${r.caseType ? '評価者' : '指導医'}のフィードバック</div>
     ${r.evaluatorFeedbackGood ? `<div class="fb-mini-label fb-mini-good">① 良かった点</div><div class="fb-box-e">${r.evaluatorFeedbackGood}</div>` : ''}
     ${r.evaluatorFeedbackGoal ? `<div class="fb-mini-label fb-mini-goal">② 次回の目標・改善点</div><div class="fb-box-e">${r.evaluatorFeedbackGoal}</div>` : ''}
     <div class="thread" id="threadArea-evaluator"></div>
     <div class="thread-input-row">
       <textarea id="newCommentBody-evaluator" placeholder="このフィードバックにコメントを追加..."></textarea>
       <button class="thread-send-btn" onclick="postComment('${r.id}','evaluator', this)">送信</button>
-    </div>
+    </div>`}
   `;
 }
 
@@ -1122,8 +1174,11 @@ async function jumpToLinkedCase() {
   try {
     const res = await gasCall({ action:'getResults', facilityCode, userId, pin, role:'evaluator' });
     const r = res && res.success ? (res.results || []).find(x => String(x.id) === String(id)) : null;
-    if (!r) return;   // 自分の症例でない／まだ評価前の場合は何もしない
-    openResultById(r.id, r);
+    if (r) { openResultById(r.id, r); return; }
+    // まだ評価前の症例なら、評価の入力画面を開く
+    const pr = await gasCall({ action:'getPending', facilityCode, userId, pin });
+    const hit = pr && pr.success ? (pr.records || []).find(x => String(x.id) === String(id) && x.status === 'pending') : null;
+    if (hit) openEvalModal(hit.id);
   } catch (e) {}
 }
 

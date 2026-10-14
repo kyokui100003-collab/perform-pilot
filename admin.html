@@ -79,7 +79,13 @@
     <div class="logo">PER<span>FORM</span></div>
     <div class="user-info"><span class="role-badge">管理者</span><span id="who"></span></div>
   </div>
-  <div><button class="hbtn" onclick="window.open('learner.html?demo=1','_blank')" title="サンプルデータで表示。保存されません">学習者画面（デモ）</button><button class="hbtn" onclick="window.open('evaluator.html?demo=1','_blank')" title="サンプルデータで表示。保存されません">指導医画面（デモ）</button><button class="hbtn" onclick="load()">↻ 更新</button><button class="hbtn" onclick="logout()">ログアウト</button></div>
+  <div><select class="hbtn" id="demoMenu" onchange="openDemo(this)" title="サンプルデータで表示。保存されません" style="appearance:auto">
+      <option value="">デモ画面 ▾</option>
+      <option value="learner.html?demo=1">学習者画面</option>
+      <option value="evaluator.html?demo=1">指導医画面</option>
+      <option value="learner.html?demo=1&self=1">指導者の自己評価（指導医が入力する側）</option>
+      <option value="evaluator.html?demo=1&rater=1">評価者画面（学習者が指導者を評価する側）</option>
+    </select><button class="hbtn" onclick="load()">↻ 更新</button><button class="hbtn" onclick="logout()">ログアウト</button></div>
 </header>
 <div class="tab-bar">
   <button class="tab-btn active" id="tb-fac"   onclick="tab('fac')">施設別</button>
@@ -89,7 +95,7 @@
 <div class="wrap">
   <details>
     <summary>指標の定義</summary>
-    症例数＝作成された症例の総数（下書き・評価待ち・評価完了の合計）。<br>
+    症例数＝作成された症例の総数（下書き・評価待ち・評価完了の合計）。指導者の自己評価（指導医が自分の症例を、施設の指導医・学習者に評価してもらうもの）は、症例数や各種の率には含めず、「指導者の自己評価（症例）」として別に数えます。<br>
     相互評価完了率＝評価完了 ÷ 症例数（学習者・指導医の両方の入力が済んだ割合）。<br>
     学習者自己評価入力率＝（評価待ち＋評価完了）÷ 症例数。　指導医評価入力率＝評価完了 ÷（評価待ち＋評価完了）。<br>
     術前目標入力率＝術前目標のある症例 ÷ 症例数。<br>
@@ -140,12 +146,14 @@ const role = sessionStorage.getItem('role'), userId = sessionStorage.getItem('us
       pin = sessionStorage.getItem('pin');
 if (role !== 'admin' || !userId) location.href = 'index.html';
 document.getElementById('who').textContent = userName || '';
+function openDemo(sel) { if (sel.value) window.open(sel.value, '_blank'); sel.value = ''; }
 function logout() { sessionStorage.clear(); location.href = 'index.html'; }
 
 let D = null;                       // サーバーから取得した全データ
 const sortState = { fac: null, usr: null, case: null };
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const STJ = { draft: '下書き', pending: '評価待ち', reviewed: '評価完了' };
+const CTJ = { '': '通常', peer: '指導者の自己評価（評価者：指導医）', upward: '指導者の自己評価（評価者：学習者）' };
 
 async function gasCall(data) {
   const res = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(data) });
@@ -209,6 +217,8 @@ const FAC_COLS = [
   { h: '学習者数', n: 1, v: f => f.learners },
   { h: '指導医数', n: 1, v: f => f.evaluators },
   { h: '症例数', n: 1, v: f => f.cases },
+  { h: '指導者の自己評価（症例）', n: 1, v: f => f.selfN },
+  { h: '同・評価完了', n: 1, v: f => f.selfReviewed },
   { h: '下書き', n: 1, v: f => f.draft },
   { h: '評価待ち', n: 1, v: f => f.pending },
   { h: '評価完了', n: 1, v: f => f.reviewed },
@@ -228,7 +238,7 @@ const FAC_COLS = [
   { h: 'リマインドから評価までの平均日数', n: 1, v: f => f.remindDaysN ? Math.round(f.remindDaysSum / f.remindDaysN * 10) / 10 : '' },
 ];
 function facTotal() {
-  const t = { facilityCode: '合計', facilityName: '', learners: 0, evaluators: 0, cases: 0, draft: 0, pending: 0, reviewed: 0, learnerCommentN: 0, evaluatorCommentN: 0, preOpGoalN: 0, discussionN: 0, tatSum: 0, tatN: 0, ratedN: 0, ratingSum: 0, ratingDaysSum: 0, ratingDaysN: 0, remindedN: 0, remindedReviewedN: 0, remindDaysSum: 0, remindDaysN: 0 };
+  const t = { facilityCode: '合計', facilityName: '', learners: 0, evaluators: 0, cases: 0, draft: 0, pending: 0, reviewed: 0, learnerCommentN: 0, evaluatorCommentN: 0, preOpGoalN: 0, discussionN: 0, tatSum: 0, tatN: 0, ratedN: 0, ratingSum: 0, ratingDaysSum: 0, ratingDaysN: 0, remindedN: 0, remindedReviewedN: 0, remindDaysSum: 0, remindDaysN: 0, selfN: 0, selfReviewed: 0 };
   D.facilities.forEach(f => Object.keys(t).forEach(k => { if (typeof t[k] === 'number') t[k] += f[k]; }));
   return t;
 }
@@ -281,6 +291,7 @@ const CASE_COLS = [
   { h: '詳細', v: c => '', html: c => `<button class="open-btn" onclick="openCase('${esc(c.id)}')">開く</button>` },
   { h: '施設コード', v: c => c.facilityCode },
   { h: '症例No.', v: c => c.caseNo },
+  { h: '種別', v: c => CTJ[c.caseType || ''] || c.caseType },
   { h: '術式', v: c => c.procedure },
   { h: '学習者', v: c => c.learnerLabel },
   { h: '指導医', v: c => c.evaluatorLabel },
@@ -345,11 +356,12 @@ function closeCase() {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCase(); });
 
 function compareTable(r) {
+  const W = r.caseType ? '指導者' : '学習者', E = r.caseType ? '評価者' : '指導医';
   const tl = r.learnerTS || {}, te = r.evaluatorTS || {};
   const row = (label, lv, ev, ll, el, roman) => `<tr><td style="font-size:12px;color:#555">${label}</td>
     <td><span class="chip-l">${lv != null ? esc((roman ? (PERF_R[lv] || lv) : lv) + '：' + (ll[lv] || '')) : '未入力'}</span></td>
     <td><span class="chip-e">${ev != null ? esc((roman ? (PERF_R[ev] || ev) : ev) + '：' + (el[ev] || '')) : '未入力'}</span></td></tr>`;
-  return `<table class="cmp-table"><tr><th>項目</th><th>学習者（自己）</th><th>指導医</th></tr>
+  return `<table class="cmp-table"><tr><th>項目</th><th>${W}（自己）</th><th>${E}</th></tr>
     ${row('自律度', r.learnerAutonomy, r.evaluatorAutonomy, AUTO_L_LEARNER, AUTO_L_EVALUATOR, false)}
     ${row('術中パフォーマンス', r.learnerPerformance, r.evaluatorPerformance, PERF_L, PERF_L, true)}
     ${row('症例難易度', r.learnerDifficulty, r.evaluatorDifficulty, DIFF_L, DIFF_L, false)}
@@ -367,17 +379,18 @@ function threadHtml(list) {
     <div class="thread-text">${esc(c.body)}</div></div></div>`).join('');
 }
 function caseDetailHtml(r, comments) {
+  const W = r.caseType ? '指導者' : '学習者', E = r.caseType ? '評価者' : '指導医', up = r.caseType === 'upward';
   const note = r.status === 'reviewed' ? '' : `<div class="ro-note">この症例は「${esc(STJ[r.status] || r.status)}」です。管理者には、入力済みの内容がすべて表示されます（指導医の画面では、評価完了までブラインドです）。</div>`;
+  const kind = r.caseType ? `<div class="ro-note" style="background:#ebf8ff;border-color:#bee3f8;color:#2c5282">種別：${esc(CTJ[r.caseType] || r.caseType)}</div>` : '';
   const stars = r.commentRating ? `　／　指導医コメントへの評価: ${'★'.repeat(+r.commentRating)}${'☆'.repeat(Math.max(0, 5 - r.commentRating))}` : '';
-  return `${note}<div class="head-box"><strong>症例No.${esc(r.caseNo)}</strong>　${esc(r.procedure)}${r.surgeryDate ? '　／　手術日: ' + esc(fmtSD(r.surgeryDate)) : ''}<br>
-    ${esc(r.facilityCode)} ${esc(r.facilityName)}<br>学習者: ${esc(r.learnerName || '(不明)')}　／　指導医: ${esc(r.evaluatorName || '(不明)')}　／　状態: <span class="st st-${esc(r.status)}">${esc(STJ[r.status] || r.status)}</span>${r.reviewedAt ? '　／　評価完了日: ' + esc(fmtD(r.reviewedAt)) : ''}${stars}</div>
+  return `${kind}${note}<div class="head-box"><strong>症例No.${esc(r.caseNo)}</strong>　${esc(r.procedure)}${r.surgeryDate ? '　／　手術日: ' + esc(fmtSD(r.surgeryDate)) : ''}<br>
+    ${esc(r.facilityCode)} ${esc(r.facilityName)}<br>${W}: ${esc(r.learnerName || '(不明)')}　／　${E}: ${esc(r.evaluatorName || '(不明)')}　／　状態: <span class="st st-${esc(r.status)}">${esc(STJ[r.status] || r.status)}</span>${r.reviewedAt ? '　／　評価完了日: ' + esc(fmtD(r.reviewedAt)) : ''}${stars}</div>
     ${compareTable(r)}
     <div class="chart-card"><div class="chart-title">Technical Scale レーダーチャート</div><canvas id="caseRadarCanvas" height="220"></canvas></div>
     ${r.preOpGoal ? `<div class="sec-hdr">術前目標</div><div class="goal-box">${esc(r.preOpGoal)}</div>` : ''}
-    <div class="sec-hdr">学習者のフィードバック</div>${fbBlock(r.learnerFeedbackGood, r.learnerFeedbackGoal, 'fb-box-l')}
-    ${threadHtml(comments.filter(c => c.target === 'learner'))}
-    <div class="sec-hdr">指導医のフィードバック</div>${fbBlock(r.evaluatorFeedbackGood, r.evaluatorFeedbackGoal, 'fb-box-e')}
-    ${threadHtml(comments.filter(c => c.target === 'evaluator'))}`;
+    <div class="sec-hdr">${W}のフィードバック</div>${fbBlock(r.learnerFeedbackGood, r.learnerFeedbackGoal, 'fb-box-l')}
+    ${up ? '' : threadHtml(comments.filter(c => c.target === 'learner'))}
+    <div class="sec-hdr">${E}のフィードバック</div>${up ? '<div class="none-txt">この種別（評価者が学習者）では、評価者の自由記述・コメント・★評価はありません。</div>' : fbBlock(r.evaluatorFeedbackGood, r.evaluatorFeedbackGoal, 'fb-box-e') + threadHtml(comments.filter(c => c.target === 'evaluator'))}`;
 }
 function drawCaseRadar(r) {
   const canvas = document.getElementById('caseRadarCanvas');
@@ -386,8 +399,8 @@ function drawCaseRadar(r) {
   const tl = r.learnerTS || {}, te = r.evaluatorTS || {};
   caseRadar = new Chart(canvas, { type: 'radar',
     data: { labels: TS_N, datasets: [
-      { label: '学習者', data: [1, 2, 3, 4, 5].map(i => +(tl['ts' + i] || 0)), borderColor: '#2ab5a8', backgroundColor: 'rgba(42,181,168,.15)', pointRadius: 3 },
-      { label: '指導医', data: [1, 2, 3, 4, 5].map(i => +(te['ts' + i] || 0)), borderColor: '#c0392b', backgroundColor: 'rgba(192,57,43,.15)', pointRadius: 3 }] },
+      { label: r.caseType ? '指導者' : '学習者', data: [1, 2, 3, 4, 5].map(i => +(tl['ts' + i] || 0)), borderColor: '#2ab5a8', backgroundColor: 'rgba(42,181,168,.15)', pointRadius: 3 },
+      { label: r.caseType ? '評価者' : '指導医', data: [1, 2, 3, 4, 5].map(i => +(te['ts' + i] || 0)), borderColor: '#c0392b', backgroundColor: 'rgba(192,57,43,.15)', pointRadius: 3 }] },
     options: { responsive: true, maintainAspectRatio: true, scales: { r: { min: 0, max: 5, ticks: { stepSize: 1, font: { size: 10 } }, pointLabels: { font: { size: 10 } } } },
       plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12 } } } } });
 }
@@ -408,10 +421,10 @@ function csv(t) {
   } else if (t === 'usr') {
     dl(`PERFORM_ユーザー別_${stamp()}.csv`, [USR_COLS.map(c => c.h)].concat(usrFiltered().map(u => USR_COLS.map(c => c.csv ? c.csv(u) : c.v(u)))));
   } else {
-    const H = ['症例ID','施設コード','施設名','症例No.','術式','学習者(匿名)','指導医(匿名)','状態','作成日','提出日','評価日','術前目標',
+    const H = ['症例ID','種別','施設コード','施設名','症例No.','術式','学習者(匿名)','指導医(匿名)','状態','作成日','提出日','評価日','術前目標',
       '自律度(学習者)','パフォーマンス(学習者)','難易度(学習者)','TS1(学習者)','TS2(学習者)','TS3(学習者)','TS4(学習者)','TS5(学習者)','良かった点(学習者)','次回の目標・改善点(学習者)',
       '自律度(指導医)','パフォーマンス(指導医)','難易度(指導医)','TS1(指導医)','TS2(指導医)','TS3(指導医)','TS4(指導医)','TS5(指導医)','良かった点(指導医)','次回の目標・改善点(指導医)','ディスカッション件数','提出→評価(日)','リマインド送信','リマインド→評価(日)','コメント評価(★)','コメント評価日時','評価完了→コメント評価(日)','結果を閲覧'];
-    dl(`PERFORM_症例一覧_${stamp()}.csv`, [H].concat(caseFiltered().map(c => [c.id, c.facilityCode, c.facilityName, c.caseNo, c.procedure, c.learnerLabel, c.evaluatorLabel, STJ[c.status] || c.status, c.createdAt, c.submittedAt, c.reviewedAt, c.preOpGoal,
+    dl(`PERFORM_症例一覧_${stamp()}.csv`, [H].concat(caseFiltered().map(c => [c.id, CTJ[c.caseType || ''] || c.caseType, c.facilityCode, c.facilityName, c.caseNo, c.procedure, c.learnerLabel, c.evaluatorLabel, STJ[c.status] || c.status, c.createdAt, c.submittedAt, c.reviewedAt, c.preOpGoal,
       c.autoL, c.perfL, c.diffL, c.ts1L, c.ts2L, c.ts3L, c.ts4L, c.ts5L, c.fbGoodL, c.fbGoalL, c.autoE, c.perfE, c.diffE, c.ts1E, c.ts2E, c.ts3E, c.ts4E, c.ts5E, c.fbGoodE, c.fbGoalE, c.discussionN, c.submitToReviewDays, c.reminderSentAt, c.reminderToReviewDays, c.commentRating, c.commentRatedAt, c.reviewToRatingDays, c.feedbackViewed ? 1 : 0])));
   }
 }
