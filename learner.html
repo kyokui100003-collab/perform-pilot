@@ -1107,13 +1107,14 @@ function renderEvalForm(draft, fresh) {
       <label style="margin-top:12px">手術日 <span class="required">*</span></label>
       <input type="date" id="evalSurgeryDate" value="${(draft ? draft.surgeryDate : fresh.surgeryDate) || ''}" max="${todayStr()}">
     </div>
-    ${isReq ? `<div class="req-notice">📨 <b>指導医が評価を入力済みです。</b>あなたの自己評価を提出するまで、指導医の評価は表示されません。提出すると、結果の画面で比べて確認できます。</div>` : `<div class="card">
+    ${isReq ? `<div class="req-notice">📨 <b>指導医が評価を入力済みです。</b>あなたの自己評価を提出するまで、指導医の評価は表示されません。提出すると、結果の画面で比べて確認できます。</div>` : ''}
+    <div class="card">
       <div class="card-title">術前目標${goalIsPreop ? '<span class="goal-mode-tag">術前に設定済み</span>' : ''}</div>
       ${goalIsPreop
         ? `<div class="goal-box"><div class="goal-text">${existingGoal}</div></div>`
-        : `<p class="hint">未入力でも送信できます。入力した場合、指導医への個別通知はされません（評価送信の通知のみ届きます）。</p>
+        : `<p class="hint">${isReq ? '手術のとき何を考えていたかを、あとから見返せるように残せます。任意です（空欄のまま提出できます）。' : '未入力でも送信できます。入力した場合、指導医への個別通知はされません（評価送信の通知のみ届きます）。'}</p>
            <textarea id="goalField" placeholder="例：クリッピングの手技を安定させたい">${existingGoal||''}</textarea>`}
-    </div>`}
+    </div>
     <div class="card">
       <div class="card-title">自律度 <small style="font-weight:400;color:#999;font-size:11px">Autonomy</small></div>
       <div class="radio-group">${[['1','見学中心'],['2','補助を受けながら執刀'],['3','主体的に執刀'],['4','ほぼ単独で執刀']].map(([v,l])=>`<label class="radio-opt"><input type="radio" name="autonomy" value="${v}" ${draft&&String(draft.autonomy)===v?'checked':''}><span class="opt-box"><span class="opt-num">${v}</span><span class="opt-jp">${l}</span></span></label>`).join('')}</div>
