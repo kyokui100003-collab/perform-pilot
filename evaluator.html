@@ -189,6 +189,49 @@
   .match-bar-sub { font-size: 11.5px; color: #888; }
   .chart-card { background: white; border-radius: 14px; padding: 18px; margin-bottom: 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.07); }
   .chart-title { font-size: 13.5px; font-weight: 700; color: #555; margin-bottom: 12px; }
+  /* 評価入力タブ */
+  .new-choice { display: grid; gap: 12px; margin-bottom: 18px; }
+  .choice-btn { width: 100%; text-align: left; border: 2px solid #2c3e50; background: #2c3e50; color: #fff; border-radius: 14px; padding: 18px; cursor: pointer; font-family: inherit; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+  .choice-btn.alt { background: #fff; color: #2c3e50; }
+  .choice-btn b { display: block; font-size: 16.5px; margin-bottom: 5px; }
+  .choice-btn > span { display: block; font-size: 12.5px; opacity: .88; line-height: 1.55; }
+  .choice-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .choice-chips i { font-style: normal; background: rgba(255,255,255,0.18); border-radius: 99px; padding: 3px 10px; font-size: 11.5px; font-weight: 700; }
+  .back-link { background: none; border: none; color: #2c3e50; font-weight: 700; cursor: pointer; font-size: 13px; padding: 0 0 12px; font-family: inherit; }
+  .sec-title { font-size: 13.5px; font-weight: 800; color: #2c3e50; margin: 20px 0 4px; display: flex; align-items: center; gap: 8px; }
+  .sec-title:first-of-type { margin-top: 4px; }
+  .sec-title .cnt { background: #2c3e50; color: #fff; border-radius: 99px; font-size: 11px; padding: 1px 9px; }
+  .sec-sub { font-size: 12px; color: #888; line-height: 1.55; margin-bottom: 10px; }
+  .none-line { background: #fff; border: 1.5px dashed #cbd5e0; color: #999; border-radius: 12px; padding: 14px; font-size: 13px; text-align: center; margin-bottom: 8px; }
+  .badge-draft { background: #fefcbf; color: #975a16; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 99px; }
+  .badge-wait  { background: #e2e8f0; color: #4a5568; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 99px; }
+  .goal-preview { font-size: 12.5px; color: #1d8a80; background: #f0faf9; border-radius: 8px; padding: 7px 10px; margin-top: 8px; line-height: 1.5; }
+  .mini-note { font-size: 11.5px; color: #975a16; margin-top: 6px; }
+  .item-card.goalcase { border-left: 4px solid #2ab5a8; }
+  .item-card.draftcase { border-left: 4px solid #d69e2e; }
+  .item-card.sentcase { border-left: 4px solid #a0aec0; }
+  .start-toggle { width: 100%; padding: 16px; background: #fff; color: #2c3e50; border: 2px dashed #2c3e50; border-radius: 14px; font-size: 15px; font-weight: 800; cursor: pointer; font-family: inherit; margin-top: 18px; }
+  .start-card { background: #fff; border-radius: 14px; padding: 18px; margin-top: 10px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+  .ns-input { width: 100%; padding: 11px 13px; border: 1.5px solid #ddd; border-radius: 8px; font-size: 15px; margin-bottom: 13px; outline: none; font-family: inherit; background: #fff; -webkit-appearance: none; appearance: none; min-height: 46px; max-height: 46px; color: #222; }
+  select.ns-input { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%23888' stroke-width='2'/></svg>"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 34px; }
+  .ns-input:focus { border-color: #2c3e50; }
+  .dup-row { border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+  .dup-row b { font-size: 14px; color: #222; }
+  .dup-row .dup-st { font-size: 12px; color: #975a16; margin: 3px 0 8px; }
+  .dup-btn { background: #2c3e50; color: #fff; border: none; border-radius: 8px; padding: 9px 14px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .dup-btn.alt { background: #fff; color: #2c3e50; border: 1.5px solid #2c3e50; }
+  /* 学習者の記述への★（指導医のみ・学習者には非公開） */
+  .rate-slot { margin-bottom: 12px; }
+  .rate-line { background: #f7f9fa; border: 1.5px dashed #cbd5e0; border-radius: 10px; padding: 10px 12px; }
+  .rate-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 10px; align-items: baseline; }
+  .rate-title { font-size: 12.5px; font-weight: 800; color: #2c3e50; }
+  .rate-title small { font-weight: 400; color: #999; margin-left: 4px; }
+  .rate-priv { font-size: 11px; color: #975a16; font-weight: 700; }
+  .rate-stars { display: flex; gap: 2px; margin: 4px 0 2px; }
+  .rate-star { background: none; border: none; font-size: 30px; line-height: 1; color: #cbd5e0; cursor: pointer; padding: 2px 5px; }
+  .rate-star.on { color: #e8a61c; }
+  .rate-cap { font-size: 12px; color: #666; line-height: 1.5; }
+  .rate-cap .rate-clear { color: #aaa; font-size: 11px; }
 </style>
 </head>
 <body>
@@ -204,6 +247,7 @@
 
 <div class="tab-bar">
   <button class="tab-btn active" id="tb-cases"    onclick="switchTab('cases')">担当案件<span class="badge-count" id="pendingBadge"></span></button>
+  <button class="tab-btn"        id="tb-new"      onclick="switchTab('new')">評価入力<span class="badge-count" id="newBadge" style="background:#d69e2e"></span></button>
   <button class="tab-btn"        id="tb-results"  onclick="switchTab('results')">結果</button>
 </div>
 </div>
@@ -212,6 +256,21 @@
 <div class="tab-panel active" id="tab-cases">
   <div class="container">
     <div id="pendingList"><div class="loading-bar">読み込み中...</div></div>
+  </div>
+</div>
+
+<!-- ===== 評価入力タブ（学習者の評価を先に入力／自己評価） ===== -->
+<div class="tab-panel" id="tab-new">
+  <div class="container">
+    <div id="newArea"><div class="loading-bar">読み込み中...</div></div>
+  </div>
+</div>
+
+<!-- 同じ手術の可能性がある症例の確認 -->
+<div class="modal-overlay" id="dupModal">
+  <div class="modal">
+    <div class="modal-hdr"><h2>同じ手術ではありませんか？</h2><button class="close-btn" onclick="closeDup()">×</button></div>
+    <div class="modal-body" id="dupBody"></div>
   </div>
 </div>
 
@@ -306,8 +365,9 @@ document.getElementById('headerInfo').innerHTML =
     lb.parentNode.insertBefore(wrap, lb);
     const nav = document.createElement('button'); nav.className = 'logout-btn';
     if (RATER_MODE) { nav.textContent = '‹ 学習者画面'; nav.setAttribute('data-nofix', '1'); nav.onclick = () => { location.href = 'learner.html' + (sessionStorage.getItem('perform_demo') === '1' ? '?demo=1' : ''); }; }
-    else { nav.textContent = '自己評価'; nav.title = '自分の症例を、施設の指導医・学習者に評価してもらう'; nav.onclick = () => { location.href = 'learner.html?self=1' + (sessionStorage.getItem('perform_demo') === '1' ? '&demo=1' : ''); }; }
-    wrap.appendChild(nav); wrap.appendChild(lb);
+    if (RATER_MODE) { const tn = document.getElementById('tb-new'); if (tn) tn.style.display = 'none'; }
+    if (RATER_MODE) wrap.appendChild(nav);
+    wrap.appendChild(lb);
   }
 }
 
@@ -325,7 +385,20 @@ const MOCK_RECORDS = [
     learnerAutonomy:2, learnerPerformance:2, learnerDifficulty:2, learnerTS:{ts1:2,ts2:2,ts3:3,ts4:2,ts5:2},
     learnerFeedbackGood:'視野展開は意識できた', learnerFeedbackGoal:'クリッピングに時間がかかった。',
     evaluatorAutonomy:2, evaluatorPerformance:3, evaluatorDifficulty:2, evaluatorTS:{ts1:3,ts2:2,ts3:3,ts4:3,ts5:3},
-    evaluatorFeedbackGood:'基本操作は良好。', evaluatorFeedbackGoal:'視野展開の工夫が今後の課題。' },
+    evaluatorFeedbackGood:'基本操作は良好。', evaluatorFeedbackGoal:'視野展開の工夫が今後の課題。', firstEvalBy:'learner', myRatings:{goal:3,good:null,next:null} },
+  // 指導医が先に評価する流れのサンプル
+  { id:'r06', caseNo:'003', surgeryDate:'2026-10-18', learnerId:'usr_l03', learnerName:'高橋 花子', procedure:'腹腔鏡下虫垂切除術', status:'draft', initiatedBy:'learner',
+    preOpGoal:'術野の展開を意識して、助手への指示を明確にする', goalEntryMode:'preop', learnerDrafting:false,
+    evaluatorAutonomy:null, evaluatorPerformance:null, evaluatorDifficulty:null, evaluatorTS:{}, evaluatorFeedbackGood:'', evaluatorFeedbackGoal:'' },
+  { id:'r07', caseNo:'004', surgeryDate:'2026-10-19', learnerId:'usr_l01', learnerName:'田中 太郎', procedure:'腹腔鏡下鼠径ヘルニア修復術', status:'e_draft', initiatedBy:'evaluator',
+    preOpGoal:'', goalEntryMode:'', evaluatorAutonomy:3, evaluatorPerformance:null, evaluatorDifficulty:null, evaluatorTS:{}, evaluatorFeedbackGood:'', evaluatorFeedbackGoal:'' },
+  { id:'r08', caseNo:'005', surgeryDate:'2026-10-17', learnerId:'usr_l02', learnerName:'鈴木 次郎', procedure:'腹腔鏡下結腸右半切除術', status:'e_sent', initiatedBy:'evaluator', sentAt:'2026-10-18T09:00:00Z', remindN:1,
+    preOpGoal:'', goalEntryMode:'', evaluatorAutonomy:3, evaluatorPerformance:4, evaluatorDifficulty:3, evaluatorTS:{ts1:4,ts2:4,ts3:3,ts4:4,ts5:4}, evaluatorFeedbackGood:'血管処理が丁寧でした。', evaluatorFeedbackGoal:'視野の確保を先に。', canEditEvaluatorComment:true },
+  { id:'r09', caseNo:'006', surgeryDate:'2026-10-10', learnerId:'usr_l01', learnerName:'田中 太郎', procedure:'腹腔鏡下胃切除術', status:'reviewed', initiatedBy:'evaluator', firstEvalBy:'evaluator', reviewedAt:'2026-10-12T09:00:00Z',
+    preOpGoal:'', goalEntryMode:'', myRatings:{goal:null,good:4,next:null},
+    learnerAutonomy:3, learnerPerformance:3, learnerDifficulty:3, learnerTS:{ts1:3,ts2:3,ts3:3,ts4:3,ts5:3},
+    learnerFeedbackGood:'リンパ節郭清の手順を意識できた。', learnerFeedbackGoal:'助手との呼吸を合わせる。',
+    evaluatorAutonomy:3, evaluatorPerformance:4, evaluatorDifficulty:3, evaluatorTS:{ts1:4,ts2:4,ts3:3,ts4:4,ts5:4}, evaluatorFeedbackGood:'手順が安定していた。', evaluatorFeedbackGoal:'術野展開を先に。', canEditEvaluatorComment:false },
   { id:'r02', caseNo:'002', surgeryDate:'2026-10-05', learnerId:'usr_l02', learnerName:'鈴木 次郎', procedure:'腹腔鏡下胆嚢摘出術', status:'pending',
     preOpGoal:'', goalEntryMode:'', hasGoal:false,
     learnerAutonomy:2, learnerPerformance:3, learnerDifficulty:2, learnerTS:{ts1:3,ts2:3,ts3:3,ts4:3,ts5:3},
@@ -358,13 +431,40 @@ async function gasCall(data) {
 function mockGasCall(data) {
   if (data.action === 'exportFacilityData') return Promise.resolve({ success:true, count:1, filename:'demo.csv', csv:'\uFEFF症例No.,術式\r\n001,デモ' });
   return new Promise(resolve => setTimeout(() => {
+    const pendList = () => MOCK_VIEW().filter(r => r.status === 'pending' || r.status === 'reviewed').map(r => ({ id:r.id, caseNo:r.caseNo, learnerId:r.learnerId, learnerName:r.learnerName, procedure:r.procedure, surgeryDate:r.surgeryDate, status:r.status, hasGoal: !!r.preOpGoal, caseType:r.caseType||'' }));
+    const startOf = () => {
+      const v = MOCK_VIEW().filter(r => !r.caseType);
+      const b = r => ({ id:r.id, caseNo:r.caseNo, learnerId:r.learnerId, learnerName:r.learnerName, procedure:r.procedure, surgeryDate:r.surgeryDate, createdAt:'2026-10-18T00:00:00Z' });
+      return { learners:[{userId:'usr_l01',name:'田中 太郎'},{userId:'usr_l02',name:'鈴木 次郎'},{userId:'usr_l03',name:'高橋 花子'}],
+        goalOnly: v.filter(r => r.status === 'draft' && r.preOpGoal).map(r => ({...b(r), preOpGoal:r.preOpGoal, learnerDrafting:!!r.learnerDrafting, hasMyDraft: r.evaluatorAutonomy != null })),
+        myDrafts: v.filter(r => r.status === 'e_draft').map(r => ({...b(r), updatedAt:'2026-10-19T00:00:00Z'})),
+        awaiting: v.filter(r => r.status === 'e_sent').map(r => ({...b(r), sentAt:r.sentAt, remindN:r.remindN||0, learnerDrafting:false})) };
+    };
     if (data.action === 'getPending') {
-      resolve({ success:true, records: MOCK_VIEW().map(r => ({ id:r.id, caseNo:r.caseNo, learnerName:r.learnerName, procedure:r.procedure, surgeryDate:r.surgeryDate, status:r.status, hasGoal: !!r.preOpGoal, caseType:r.caseType||'' })) });
+      resolve({ success:true, records: pendList() });
+    } else if (data.action === 'getEvaluatorStart') {
+      resolve({ success:true, records: pendList(), start: startOf() });
+    } else if (data.action === 'startEvaluatorCase') {
+      const id = 'rn' + Date.now();
+      const ln = (startOf().learners.find(l => l.userId === data.learnerId) || {}).name || '';
+      MOCK_RECORDS.push({ id, caseNo:'00' + (MOCK_RECORDS.length + 1), surgeryDate:data.surgeryDate, learnerId:data.learnerId, learnerName:ln, procedure:data.procedure, status:'e_draft', initiatedBy:'evaluator',
+        preOpGoal:'', goalEntryMode:'', evaluatorAutonomy:null, evaluatorPerformance:null, evaluatorDifficulty:null, evaluatorTS:{}, evaluatorFeedbackGood:'', evaluatorFeedbackGoal:'' });
+      resolve({ success:true, id, caseNo:'00' + MOCK_RECORDS.length });
+    } else if (data.action === 'saveEvaluatorDraft') {
+      resolve({ success:true });
+    } else if (data.action === 'rateLearnerComments') {
+      const rec = MOCK_RECORDS.find(r => r.id === data.recordId);
+      if (rec) { rec.myRatings = rec.myRatings || {}; ['goal','good','next'].forEach(k => { if (data[k] !== undefined) rec.myRatings[k] = data[k]; }); }
+      resolve({ success:true });
     } else if (data.action === 'getRecord') {
       const rec = MOCK_VIEW().find(r => r.id === data.recordId);
-      resolve(rec ? { success:true, record: {...rec, canEditEvaluatorComment:true} } : { success:false, error:'Not found' });
+      resolve(rec ? { success:true, record: {...rec, canEditEvaluatorComment: rec.canEditEvaluatorComment !== false, learnerSubmitted: rec.status === 'pending' || rec.status === 'reviewed', evaluatorSubmitted: rec.status === 'e_sent' || rec.status === 'reviewed'} } : { success:false, error:'Not found' });
     } else if (data.action === 'submitEvaluator') {
-      resolve({ success:true });
+      const rec = MOCK_RECORDS.find(r => r.id === data.recordId);
+      let status = 'reviewed';
+      if (rec) { const e = data.evaluation || {}; Object.assign(rec, { evaluatorAutonomy:e.autonomy, evaluatorPerformance:e.performance, evaluatorDifficulty:e.difficulty, evaluatorTS:{ts1:e.ts1,ts2:e.ts2,ts3:e.ts3,ts4:e.ts4,ts5:e.ts5}, evaluatorFeedbackGood:e.feedbackGood, evaluatorFeedbackGoal:e.feedbackGoal });
+        if (rec.status === 'draft' || rec.status === 'e_draft') { rec.status = 'e_sent'; rec.sentAt = new Date().toISOString(); status = 'e_sent'; } else rec.status = 'reviewed'; }
+      resolve({ success:true, status });
     } else if (data.action === 'editEvaluatorComment') {
       resolve({ success:true });
     } else if (data.action === 'getLearnerSummary' || data.action === 'getFacilityLearnerSummary') {
@@ -373,7 +473,7 @@ function mockGasCall(data) {
         if (!map[r.learnerId]) map[r.learnerId] = { learnerId:r.learnerId, learnerName:r.learnerName, records:[], reviewed:0, pending:0, total:0 };
         const l = map[r.learnerId];
         if (r.status === 'reviewed') { l.records.push(r); l.reviewed++; l.total++; }
-        else if (data.action === 'getLearnerSummary') { l.pending++; l.total++; }
+        else if (data.action === 'getLearnerSummary' && r.status === 'pending') { l.pending++; l.total++; }
       });
       resolve({ success:true, learners: Object.values(map).filter(l => l.records.length || l.pending) });
     } else if (data.action === 'getResults') {
@@ -436,8 +536,8 @@ if (RATER_MODE) {
   fix(document.body);
   new MutationObserver(ms => ms.forEach(m => { m.addedNodes.forEach(nd => { if (nd.nodeType === 1) fix(nd); else if (nd.nodeType === 3 && nd.parentNode) fix(nd.parentNode); }); })).observe(document.body, { childList: true, subtree: true });
 }
-const TAB_IDS = ['cases','results'];
-let loaded = { cases: false, results: false };
+const TAB_IDS = ['cases','new','results'];
+let loaded = { cases: false, new: false, results: false };
 
 function switchTab(tab) {
   TAB_IDS.forEach(t => {
@@ -447,6 +547,7 @@ function switchTab(tab) {
   if (!loaded[tab]) {
     loaded[tab] = true;
     if (tab === 'cases')    loadCases();
+    if (tab === 'new')      loadNew();
     if (tab === 'results')  loadResults();
   }
 }
@@ -608,6 +709,205 @@ function toggleLearner(header) {
   chev.classList.toggle('open', open);
 }
 
+
+// -------------------------------------------------------
+// 評価入力タブ：学習者の評価を先に入力する／自己評価
+// -------------------------------------------------------
+let startData = null, pendingForDup = [], newView = 'home', evalDirty = false, dupPayload = null;
+const todayStr = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const trunc = (t, n) => { t = String(t || ''); return t.length > n ? t.slice(0, n) + '…' : t; };
+const sdTxt = s => s ? '手術日: ' + fmtSD(s) : '';
+const daysSince = iso => { const t = new Date(iso).getTime(); return isNaN(t) ? '' : Math.max(0, Math.floor((Date.now() - t) / 86400000)); };
+
+async function loadNew(pre) {
+  if (pre) {
+    startData = pre.start || null;
+    pendingForDup = (pre.records || []).filter(r => r.status === 'pending' && !r.caseType);
+  } else if (!startData) {
+    document.getElementById('newArea').innerHTML = '<div class="loading-bar">読み込み中...</div>';
+    try {
+      const res = await gasCall({ action: 'getEvaluatorStart', facilityCode, userId, pin });
+      if (!res.success) { document.getElementById('newArea').innerHTML = `<div class="error-box">${res.error}</div>`; return; }
+      startData = res.start; pendingForDup = (res.records || []).filter(r => r.status === 'pending' && !r.caseType);
+    } catch (e) { document.getElementById('newArea').innerHTML = '<div class="empty-msg">接続エラー</div>'; return; }
+  }
+  loaded.new = true;
+  renderNew();
+}
+
+// 画面の更新（担当案件と評価入力タブを、1回の通信でまとめて更新する）
+async function refreshAll() {
+  try {
+    const res = await gasCall({ action: 'getEvaluatorStart', facilityCode, userId, pin });
+    if (res && res.success) { loaded.cases = true; loadCases({ success: true, records: res.records || [] }); loadNew(res); return; }
+  } catch (e) {}
+  loaded.cases = false; loadCases();
+}
+
+function setNewView(v) { newView = v; renderNew(); window.scrollTo(0, 0); }
+function goSelfEval() { location.href = 'learner.html?self=1' + (sessionStorage.getItem('perform_demo') === '1' ? '&demo=1' : ''); }
+
+function renderNew() {
+  const el = document.getElementById('newArea');
+  if (!startData) return;
+  const sd = startData;
+  const nG = sd.goalOnly.length, nD = sd.myDrafts.length, nW = sd.awaiting.length;
+  const badge = document.getElementById('newBadge');
+  if (badge) { badge.style.display = (nG + nD) ? 'inline-block' : 'none'; badge.textContent = nG + nD; }
+
+  if (newView === 'home') {
+    const chips = [nG ? `<i>🎯 術前目標あり ${nG}件</i>` : '', nD ? `<i>入力途中 ${nD}件</i>` : '', nW ? `<i>自己評価待ち ${nW}件</i>` : ''].join('');
+    el.innerHTML = `<div class="new-choice">
+      <button class="choice-btn" onclick="setNewView('learner')"><b>学習者の評価を入力する</b>
+        <span>学習者の手術を評価します。術前目標が入力された症例から選ぶことも、新しい症例を始めることもできます。</span>
+        ${chips ? `<div class="choice-chips">${chips}</div>` : ''}</button>
+      <button class="choice-btn alt" onclick="goSelfEval()"><b>自分の手術の自己評価を入力する</b>
+        <span>ご自身の手術を振り返り、施設の指導医（または学習者）に評価してもらいます。</span></button>
+    </div>`;
+    return;
+  }
+
+  const goalCard = c => `<div class="item-card goalcase" onclick="openEvalModal('${c.id}')">
+      <div class="card-top"><span class="card-title">${escH(c.procedure)}</span>${c.hasMyDraft ? '<span class="badge-draft">入力途中</span>' : '<span class="badge-new">評価待ち</span>'}</div>
+      <div class="card-meta">症例No.${escH(c.caseNo)}　学習者: ${escH(c.learnerName)}${c.surgeryDate ? '　|　' + sdTxt(c.surgeryDate) : ''}</div>
+      <div class="goal-preview">🎯 ${escH(trunc(c.preOpGoal, 70))}</div>
+      ${c.learnerDrafting ? '<div class="mini-note">学習者も自己評価を入力中です（あなたの評価は学習者が提出するまで表示されません）</div>' : ''}</div>`;
+  const draftCard = c => `<div class="item-card draftcase" onclick="openEvalModal('${c.id}')">
+      <div class="card-top"><span class="card-title">${escH(c.procedure)}</span><span class="badge-draft">入力途中</span></div>
+      <div class="card-meta">症例No.${escH(c.caseNo)}　学習者: ${escH(c.learnerName)}${c.surgeryDate ? '　|　' + sdTxt(c.surgeryDate) : ''}</div></div>`;
+  const sentCard = c => { const d = daysSince(c.sentAt); return `<div class="item-card sentcase" onclick="openEvalModal('${c.id}')">
+      <div class="card-top"><span class="card-title">${escH(c.procedure)}</span><span class="badge-wait">自己評価待ち</span></div>
+      <div class="card-meta">症例No.${escH(c.caseNo)}　学習者: ${escH(c.learnerName)}${c.surgeryDate ? '　|　' + sdTxt(c.surgeryDate) : ''}</div>
+      <div class="card-meta" style="margin-top:3px">評価を送信: ${fmtDate(c.sentAt)}${d !== '' ? `（${d}日経過）` : ''}${c.remindN ? `　|　学習者へリマインド ${c.remindN}回` : ''}${c.learnerDrafting ? '　|　学習者が入力中' : ''}</div></div>`; };
+
+  const learnerOpts = sd.learners.map(l => `<option value="${escH(l.userId)}">${escH(l.name)}${l.department ? '（' + escH(l.department) + '）' : ''}</option>`).join('');
+  const procHist = [...new Set([...(allResults || []).map(r => r.procedure), ...sd.goalOnly.map(c => c.procedure), ...sd.myDrafts.map(c => c.procedure), ...sd.awaiting.map(c => c.procedure)].filter(Boolean))];
+
+  el.innerHTML = `<button class="back-link" onclick="setNewView('home')">‹ 戻る</button>
+    <div class="sec-title">🎯 術前目標が入力されている症例 <span class="cnt">${nG}</span></div>
+    <div class="sec-sub">学習者が術前に目標を入力した症例です。手術後に、この症例の評価を入力してください。</div>
+    ${nG ? sd.goalOnly.map(goalCard).join('') : '<div class="none-line">術前目標が入力されている症例はありません</div>'}
+
+    ${nD ? `<div class="sec-title">✏️ 入力途中の症例 <span class="cnt">${nD}</span></div>${sd.myDrafts.map(draftCard).join('')}` : ''}
+
+    <button class="start-toggle" id="nsToggle" onclick="toggleNs()">＋ 術前目標のない症例の評価を、新しく始める</button>
+    <div class="start-card" id="nsCard" style="display:none">
+      <label>学習者</label>
+      <select class="ns-input" id="nsLearner"><option value="">選択してください</option>${learnerOpts}</select>
+      <label>手術日</label>
+      <input type="date" class="ns-input" id="nsDate" max="${todayStr()}" value="${todayStr()}">
+      <label>術式名</label>
+      <input type="text" class="ns-input" id="nsProc" list="nsProcList" placeholder="例：腹腔鏡下胆嚢摘出術" autocomplete="off">
+      <datalist id="nsProcList">${procHist.map(p => `<option value="${escH(p)}">`).join('')}</datalist>
+      <button class="save-btn" id="nsGo" onclick="startNewEval()">評価の入力へ進む</button>
+      <div class="hint" style="margin:10px 0 0">評価を送信すると、学習者に自己評価の依頼が届きます。学習者が自己評価を提出するまで、あなたの評価は学習者に表示されません。</div>
+    </div>
+
+    ${nW ? `<div class="sec-title">📨 学習者の自己評価待ち <span class="cnt">${nW}</span></div>
+      <div class="sec-sub">評価は送信済みです。学習者が自己評価を提出すると完了し、メールでお知らせします。</div>${sd.awaiting.map(sentCard).join('')}` : ''}`;
+}
+
+function toggleNs() {
+  const c = document.getElementById('nsCard'), t = document.getElementById('nsToggle');
+  const show = c.style.display === 'none';
+  c.style.display = show ? 'block' : 'none';
+  t.style.display = show ? 'none' : 'block';
+  if (show) setTimeout(() => c.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
+}
+
+function findDupCandidates(learnerId, date) {
+  const out = [];
+  const add = (arr, kind) => (arr || []).forEach(c => { if (c.learnerId === learnerId && c.surgeryDate === date) out.push(Object.assign({ kind }, c)); });
+  add(pendingForDup, 'pending'); add(startData.goalOnly, 'goal'); add(startData.myDrafts, 'draft'); add(startData.awaiting, 'sent');
+  return out;
+}
+
+function startNewEval() {
+  const learnerId = document.getElementById('nsLearner').value, date = document.getElementById('nsDate').value, proc = document.getElementById('nsProc').value.trim();
+  if (!learnerId) { alert('学習者を選択してください'); return; }
+  if (!date) { alert('手術日を入力してください'); return; }
+  if (date > todayStr()) { alert('手術日が今日より先の日付になっています。確認してください'); return; }
+  if (!proc) { alert('術式名を入力してください'); return; }
+  dupPayload = { learnerId, date, proc };
+  const cands = findDupCandidates(learnerId, date);
+  if (cands.length) { showDup(cands); return; }
+  doStartNew();
+}
+
+const DUP_ST = { pending: '学習者が自己評価を送信済み（あなたの評価待ち）', goal: '学習者が術前目標を入力済み', draft: 'あなたが入力途中', sent: 'あなたが評価を送信済み（学習者の自己評価待ち）' };
+function showDup(cands) {
+  document.getElementById('dupBody').innerHTML =
+    `<div style="font-size:13.5px;color:#444;line-height:1.7;margin-bottom:12px">この学習者の、同じ手術日の症例がすでにあります。<b>同じ手術</b>であれば、新しく作らず、その症例を使ってください（重複を防げます）。</div>` +
+    cands.map(c => `<div class="dup-row"><b>${escH(c.procedure)}</b>　<span style="color:#999;font-size:12px">症例No.${escH(c.caseNo)}</span>
+      <div class="dup-st">${DUP_ST[c.kind]}</div>
+      <button class="dup-btn" onclick="useDup('${c.id}')">${c.kind === 'sent' ? 'この症例を開く' : 'この症例に評価を入力する'}</button></div>`).join('') +
+    `<button class="dup-btn alt" style="width:100%;margin-top:6px" onclick="newAnyway()">別の手術として、新しく始める</button>
+     <div class="hint" style="margin:10px 0 0">同じ日に同じ術式が複数あるときは「別の手術として」を選んでください。あとで重複と分かった場合は、事務局が統合できます。</div>`;
+  document.getElementById('dupModal').classList.add('show');
+}
+function closeDup() { document.getElementById('dupModal').classList.remove('show'); }
+function useDup(id) { closeDup(); openEvalModal(id); }
+function newAnyway() { closeDup(); doStartNew(); }
+
+async function doStartNew() {
+  const p = dupPayload; if (!p) return;
+  const btn = document.getElementById('nsGo');
+  if (btn) { btn.disabled = true; btn.textContent = '準備中...'; }
+  try {
+    const res = await gasCall({ action: 'startEvaluatorCase', facilityCode, userId, pin, learnerId: p.learnerId, procedure: p.proc, surgeryDate: p.date });
+    if (!res.success) { alert(res.error || '開始できませんでした'); return; }
+    evalDirty = true;
+    openEvalModal(res.id);
+  } catch (e) {
+    alert('接続エラーが発生しました。');
+  } finally {
+    const b = document.getElementById('nsGo'); if (b) { b.disabled = false; b.textContent = '評価の入力へ進む'; }
+  }
+}
+
+// -------------------------------------------------------
+// 学習者の「術前目標」「振り返り」「次回の目標」への★評価（任意・学習者には非公開）
+// -------------------------------------------------------
+const RATE_DEF = {
+  goal: { title: '術前目標の質', top: '完璧な目標設定' },
+  good: { title: '振り返り（良かった点）の質', top: '完璧な振り返り' },
+  next: { title: '次回の目標設定の質', top: '完璧な目標設定' }
+};
+const RATE_MID = ['', 'まったく的外れ', 'あまり的確でない', 'おおむね妥当', '的確で具体的'];
+const rateLabel = (k, n) => n === 5 ? RATE_DEF[k].top : RATE_MID[n];
+const ratingsCache = {};
+let ratingState = null;
+
+function initRatings(r) {
+  ratingState = null;
+  if (!r || r.caseType === 'upward' || !r.myRatings) return;
+  const base = ratingsCache[r.id] || r.myRatings;
+  ratingState = { id: r.id, W: rateeWord(r), goal: base.goal || null, good: base.good || null, next: base.next || null };
+  setTimeout(() => ['goal', 'good', 'next'].forEach(renderRateSlot), 0);
+}
+function renderRateSlot(k) {
+  const el = document.getElementById('rate-' + k);
+  if (!el || !ratingState) return;
+  const cur = ratingState[k] || 0, def = RATE_DEF[k];
+  el.innerHTML = `<div class="rate-line">
+    <div class="rate-head"><span class="rate-title">${def.title}を★で評価<small>（任意）</small></span><span class="rate-priv">🔒 ${ratingState.W}には表示されません</span></div>
+    <div class="rate-stars">${[1, 2, 3, 4, 5].map(n => `<button type="button" class="rate-star ${cur >= n ? 'on' : ''}" onclick="setRate('${k}',${n})" aria-label="${n}">★</button>`).join('')}</div>
+    <div class="rate-cap">${cur ? `<b>${cur}</b>：${rateLabel(k, cur)}<span class="rate-clear">　（同じ★をもう一度押すと取り消せます）</span>` : `1 まったく的外れ　〜　5 ${def.top}`}</div></div>`;
+}
+async function setRate(k, n) {
+  if (!ratingState) return;
+  const st = ratingState, prev = st[k], val = (prev === n) ? null : n;
+  st[k] = val; ratingsCache[st.id] = { goal: st.goal, good: st.good, next: st.next }; renderRateSlot(k);
+  try {
+    const res = await gasCall({ action: 'rateLearnerComments', facilityCode, userId, pin, recordId: st.id, [k]: val });
+    if (!res.success) throw new Error(res.error || '');
+    showToast(val ? '★ ' + val + ' を保存しました' : '★ を取り消しました');
+  } catch (e) {
+    st[k] = prev; ratingsCache[st.id] = { goal: st.goal, good: st.good, next: st.next }; renderRateSlot(k);
+    alert('保存できませんでした。' + (e && e.message ? '（' + e.message + '）' : ''));
+  }
+}
+
 let modalHistoryPushed = false;
 
 function openResultById(id, r) {
@@ -615,6 +915,7 @@ function openResultById(id, r) {
   document.getElementById('resultModalBody').innerHTML = renderResultDetail(r);
   document.getElementById('resultModal').classList.add('show');
   if (!modalHistoryPushed) { history.pushState({ modal: true }, ''); modalHistoryPushed = true; }
+  initRatings(r);
   if (r.caseType !== 'upward') loadThread(r.id);
 }
 
@@ -624,13 +925,13 @@ function openResultById(id, r) {
 let currentRecordId = null;
 let currentRecord = null;
 
-async function openEvalModal(id) {
+async function openEvalModal(id, pre) {
   currentRecordId = id;
   document.getElementById('evalModalBody').innerHTML = '<div class="loading-bar">読み込み中...</div>';
   document.getElementById('evalModal').classList.add('show');
   if (!modalHistoryPushed) { history.pushState({ modal: true }, ''); modalHistoryPushed = true; }
   try {
-    const res = await gasCall({ action: 'getRecord', facilityCode, userId, pin, recordId: id });
+    const res = pre ? { success: true, record: pre } : await gasCall({ action: 'getRecord', facilityCode, userId, pin, recordId: id });
     if (!res.success) { document.getElementById('evalModalBody').innerHTML = `<div class="error-box">${res.error}</div>`; return; }
     currentRecord = res.record;
     document.getElementById('evalModalTitle').textContent = res.record.procedure;
@@ -642,12 +943,15 @@ async function openEvalModal(id) {
 
 function renderEvalForm(r) {
   const isReviewed = r.status === 'reviewed';
+  const isSent = r.status === 'e_sent';                    // 先に評価を送信済み（学習者の自己評価待ち）
+  const evalFirst = !isReviewed && r.status !== 'pending'; // 学習者の自己評価より先に評価を入力する症例
+  const locked = isReviewed || isSent;
   const up = r.caseType === 'upward';                      // 指導者の自己評価で、評価者が学習者（自由記述・コメントなし）
   const W = rateeWord(r);                                  // 評価される側の呼び方
   const canEditC = !!r.canEditEvaluatorComment && !up;
-  const editable = !isReviewed || canEditC;
+  const editable = !locked || canEditC;
   const ets = r.evaluatorTS || {};
-  const dis = isReviewed ? 'disabled' : '';
+  const dis = locked ? 'disabled' : '';
 
   const compareHtml = isReviewed ? `
     <div class="sec-hdr" style="color:#1d8a80;border-color:#b2ead6">${W}の自己評価 ↔ あなたの評価</div>
@@ -656,9 +960,13 @@ function renderEvalForm(r) {
     ${r.learnerFeedbackGoal ? `<div class="fb-mini-label fb-mini-goal">${W}：② 次回の目標</div><div class="fb-box-l">${r.learnerFeedbackGoal}</div>` : ''}` : '';
 
   document.getElementById('evalModalBody').innerHTML = `
-    ${!isReviewed
-      ? `<div class="blind-notice">⚠️ <strong>ブラインド評価モード</strong><br>${W}の自己評価は評価完了まで非表示です。独立した評価を入力してください。</div>`
-      : `<div class="reviewed-box">✅ 評価済み。${W}のスコアとの比較が表示されています。${canEditC ? '（コメントは送信後72時間以内のため編集できます）' : ''}</div>`}
+    ${isReviewed
+      ? `<div class="reviewed-box">✅ 評価済み。${W}のスコアとの比較が表示されています。${canEditC ? '（コメントは送信後72時間以内のため編集できます）' : ''}</div>`
+      : isSent
+      ? `<div class="reviewed-box" style="background:#ebf8ff;border-color:#bee3f8;color:#2c5282">📨 評価を送信済みです。${W}の自己評価待ちです。${W}が自己評価を提出すると、結果で比較を確認できます（それまで、あなたの評価は${W}に表示されません）。${canEditC ? '（コメントは送信後72時間以内のため編集できます）' : ''}</div>`
+      : evalFirst
+      ? `<div class="blind-notice" style="background:#f0f7ff;border-color:#bee3f8;color:#2c5282">ℹ️ <strong>先に評価を入力します</strong><br>${W}の自己評価はまだありません。送信すると${W}に自己評価の依頼が届き、${W}が自己評価を提出するまで、あなたの評価は${W}に表示されません。</div>`
+      : `<div class="blind-notice">⚠️ <strong>ブラインド評価モード</strong><br>${W}の自己評価は評価完了まで非表示です。独立した評価を入力してください。</div>`}
 
     <div class="info-grid">
       <div class="info-item"><label>症例No.</label><span>${r.caseNo}</span></div>
@@ -671,7 +979,7 @@ function renderEvalForm(r) {
     ${r.preOpGoal ? `<div class="sec-hdr">術前目標</div><div class="goal-box"><div class="goal-text">${r.preOpGoal}</div></div>` : ''}
 
     ${compareHtml}
-    <div class="sec-hdr">${isReviewed ? 'あなたの評価（参照）' : 'あなたの評価を入力'}</div>
+    <div class="sec-hdr">${locked ? 'あなたの評価（参照）' : 'あなたの評価を入力'}</div>
 
     <div style="font-size:13px;font-weight:700;color:#333;margin-bottom:7px">自律度 <small style="font-weight:400;color:#999;font-size:11px">Autonomy</small></div>
     <div class="radio-group">
@@ -707,7 +1015,7 @@ function renderEvalForm(r) {
     <label>② 次回の目標・改善点</label>
     <textarea id="fbGoalE" ${!editable?'readonly':''} placeholder="次回に向けて意識してほしいことなど">${r.evaluatorFeedbackGoal||''}</textarea>`}
 
-    ${!isReviewed ? `
+    ${!locked ? `
     <div class="btn-row">
       <button class="save-btn secondary" id="draftBtn" onclick="saveEvalDraft()">
         <span id="draftLabel">一時保存する</span>
@@ -715,7 +1023,7 @@ function renderEvalForm(r) {
       </button>
     </div>
     <button class="save-btn" id="saveBtn" onclick="saveEval()">
-      <span id="saveLabel">評価を保存して${W}に通知</span>
+      <span id="saveLabel">${evalFirst ? '評価を送信して' + W + 'に自己評価を依頼' : '評価を保存して' + W + 'に通知'}</span>
       <div class="spinner" id="saveSpinner"></div>
     </button>` : (canEditC ? `
     <button class="save-btn" id="saveBtn" onclick="saveEditedComment()">
@@ -753,6 +1061,7 @@ async function saveEvalDraft() {
     });
     if (!res.success) { alert('エラー: ' + res.error); return; }
     showToast('💾 一時保存しました（未送信）');
+    evalDirty = true;
   } catch (e) {
     alert('接続エラーが発生しました。');
   } finally {
@@ -785,14 +1094,15 @@ async function saveEval() {
       evaluation: { autonomy, performance, difficulty, ts1, ts2, ts3, ts4, ts5, feedbackGood, feedbackGoal }
     });
     if (!res.success) { alert('エラー: ' + res.error); return; }
-    showToast('✅ 評価を保存しました');
+    showToast(res.status === 'e_sent' ? '✅ 送信しました。' + rateeWord(currentRecord) + 'に自己評価を依頼しました' : '✅ 評価を保存しました');
+    evalDirty = true;
     closeEvalModal();
     loaded.results = false;
   } catch (e) {
     alert('接続エラーが発生しました。');
   } finally {
     const b = document.getElementById('saveBtn');
-    if (b) { b.disabled = false; document.getElementById('saveSpinner').style.display = 'none'; document.getElementById('saveLabel').textContent = '評価を保存して' + rateeWord(currentRecord) + 'に通知'; }
+    if (b) { b.disabled = false; document.getElementById('saveSpinner').style.display = 'none'; document.getElementById('saveLabel').textContent = (currentRecord && currentRecord.status !== 'pending' ? '評価を送信して' + rateeWord(currentRecord) + 'に自己評価を依頼' : '評価を保存して' + rateeWord(currentRecord) + 'に通知'); }
   }
 }
 
@@ -819,7 +1129,7 @@ function showToast(msg) {
 
 function closeEvalModal() {
   document.getElementById('evalModal').classList.remove('show');
-  loaded.cases = false; prefetched = null; loadCases();
+  if (evalDirty) { evalDirty = false; prefetched = null; refreshAll(); }   // 変更があったときだけ、一覧を更新する
   if (modalHistoryPushed) { modalHistoryPushed = false; history.back(); }
 }
 
@@ -836,7 +1146,7 @@ function closeResultModal() {
 window.addEventListener('popstate', () => {
   const em = document.getElementById('evalModal');
   const rm = document.getElementById('resultModal');
-  if (em && em.classList.contains('show')) { em.classList.remove('show'); loaded.cases = false; prefetched = null; loadCases(); }
+  if (em && em.classList.contains('show')) { em.classList.remove('show'); if (evalDirty) { evalDirty = false; prefetched = null; refreshAll(); } }
   if (rm && rm.classList.contains('show')) { rm.classList.remove('show'); }
   modalHistoryPushed = false;
 });
@@ -871,17 +1181,18 @@ function renderResultDetail(r) {
     <div style="background:#f8f9fa;border-radius:10px;padding:13px 15px;margin-bottom:16px;font-size:13px;color:#555;line-height:1.7">
       <strong>症例No.${r.caseNo}</strong>　${r.procedure}${r.surgeryDate ? '　／　手術日: '+fmtSD(r.surgeryDate) : ''}<br>
       ${rateeWord(r)}: ${r.learnerName || '(不明)'}　／　${r.caseType ? '評価者' : '指導医'}: ${r.evaluatorName || '(不明)'}${r.reviewedAt ? '　／　評価完了日: '+(fmtDate(r.reviewedAt)||'未評価') : ''}
+      ${r.firstEvalBy ? `<br><span style="color:#888;font-size:12px">入力の順序: ${r.firstEvalBy === 'evaluator' ? (r.caseType ? '評価者' : '指導医') : rateeWord(r)}が先に評価を入力</span>` : ''}
     </div>
     ${buildCompareTable(r)}
     <div class="chart-card" style="margin-top:16px;margin-bottom:16px">
       <div class="chart-title">Technical Scale レーダーチャート</div>
       <canvas id="modalRadarCanvas" height="220"></canvas>
     </div>
-    ${r.preOpGoal ? `<div class="sec-hdr">術前目標</div><div class="goal-box"><div class="goal-text">${r.preOpGoal}</div></div>` : ''}
+    ${r.preOpGoal ? `<div class="sec-hdr">術前目標</div><div class="goal-box"><div class="goal-text">${r.preOpGoal}</div></div><div class="rate-slot" id="rate-goal"></div>` : ''}
 
     <div class="sec-hdr">${rateeWord(r)}のフィードバック</div>
-    ${r.learnerFeedbackGood ? `<div class="fb-mini-label fb-mini-good">① 良かった点</div><div class="fb-box-l">${r.learnerFeedbackGood}</div>` : ''}
-    ${r.learnerFeedbackGoal ? `<div class="fb-mini-label fb-mini-goal">② 次回の目標・改善点</div><div class="fb-box-l">${r.learnerFeedbackGoal}</div>` : ''}
+    ${r.learnerFeedbackGood ? `<div class="fb-mini-label fb-mini-good">① 良かった点</div><div class="fb-box-l">${r.learnerFeedbackGood}</div><div class="rate-slot" id="rate-good"></div>` : ''}
+    ${r.learnerFeedbackGoal ? `<div class="fb-mini-label fb-mini-goal">② 次回の目標・改善点</div><div class="fb-box-l">${r.learnerFeedbackGoal}</div><div class="rate-slot" id="rate-next"></div>` : ''}
     ${r.caseType === 'upward' ? '' : `<div class="thread" id="threadArea-learner"></div>
     <div class="thread-input-row">
       <textarea id="newCommentBody-learner" placeholder="このフィードバックにコメントを追加..."></textarea>
@@ -1172,13 +1483,11 @@ async function jumpToLinkedCase() {
   try { id = sessionStorage.getItem('jumpCase') || ''; sessionStorage.removeItem('jumpCase'); } catch (e) {}
   if (!id) return;
   try {
-    const res = await gasCall({ action:'getResults', facilityCode, userId, pin, role:'evaluator' });
-    const r = res && res.success ? (res.results || []).find(x => String(x.id) === String(id)) : null;
-    if (r) { openResultById(r.id, r); return; }
-    // まだ評価前の症例なら、評価の入力画面を開く
-    const pr = await gasCall({ action:'getPending', facilityCode, userId, pin });
-    const hit = pr && pr.success ? (pr.records || []).find(x => String(x.id) === String(id) && x.status === 'pending') : null;
-    if (hit) openEvalModal(hit.id);
+    const res = await gasCall({ action:'getRecord', facilityCode, userId, pin, recordId:id });   // 1回の通信で、状態に応じた画面を開く
+    const rec = res && res.success ? res.record : null;
+    if (!rec) return;
+    if (rec.status === 'reviewed') openResultById(rec.id, rec);
+    else openEvalModal(rec.id, rec);   // 評価前（学習者が先／指導医が先）・送信済みの症例は、評価の入力画面（または参照画面）を開く
   } catch (e) {}
 }
 
@@ -1189,8 +1498,10 @@ async function jumpToLinkedCase() {
     const res = await gasCall({ action: 'getEvaluatorInitialData', facilityCode, userId, pin });
     if (res && res.success) {
       prefetched = { results: res.results || [], learners: res.learners || [] };
+      allResults = res.results || [];
       loaded.cases = true;
       loadCases({ success: true, records: res.records || [] });
+      loadNew(res);
       return;
     }
   } catch (e) {}

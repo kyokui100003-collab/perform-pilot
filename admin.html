@@ -71,6 +71,24 @@
   .thread-avatar.learner { background: #3182ce; } .thread-avatar.evaluator { background: #c0392b; }
   .thread-name { font-size: 12.5px; font-weight: 700; } .thread-time { font-size: 10.5px; color: #aaa; margin-left: 6px; font-weight: 400; }
   .thread-text { font-size: 13.5px; margin-top: 3px; white-space: pre-wrap; line-height: 1.5; }
+  .st-e_draft { background: #e9d8fd; color: #553c9a; } .st-e_sent { background: #bee3f8; color: #2a4365; } .st-merged { background: #e2e8f0; color: #718096; }
+  .tab-badge { background: #e53e3e; color: #fff; border-radius: 99px; font-size: 11px; padding: 1px 8px; margin-left: 6px; font-weight: 800; }
+  .mg-banner { display: none; background: #fff5f5; border: 2px solid #e53e3e; color: #9b2c2c; border-radius: 10px; padding: 11px 14px; margin-bottom: 12px; font-size: 13.5px; font-weight: 700; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .mg-banner .btn { background: #e53e3e; }
+  .mg-card { background: #fff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; }
+  .mg-type { display: inline-block; background: #fefcbf; color: #744210; border-radius: 99px; font-size: 11.5px; font-weight: 800; padding: 2px 10px; margin-bottom: 6px; }
+  .mg-guide { font-size: 12.5px; color: #4a5568; line-height: 1.7; background: #f7fafc; border-radius: 8px; padding: 9px 12px; margin: 8px 0 10px; }
+  .mg-warn { font-size: 12.5px; color: #c53030; font-weight: 700; margin-bottom: 8px; }
+  .mg-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 640px) { .mg-pair { grid-template-columns: 1fr; } }
+  .mg-side { border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; font-size: 13px; line-height: 1.65; }
+  .mg-side.l { border-left: 4px solid #3182ce; } .mg-side.e { border-left: 4px solid #c0392b; }
+  .mg-side h4 { font-size: 12px; margin-bottom: 3px; color: #4a5568; }
+  .mg-act { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .btn.danger { background: #c05621; } .btn:disabled { opacity: .5; cursor: default; }
+  .bar { display: inline-block; height: 9px; background: #63b3ed; border-radius: 3px; vertical-align: middle; margin-right: 6px; min-width: 1px; }
+  .sec-t { font-size: 14px; font-weight: 800; margin: 18px 0 8px; }
+  .note-s { font-size: 12px; color: #718096; margin: -4px 0 8px; line-height: 1.6; }
 </style>
 </head>
 <body>
@@ -91,6 +109,8 @@
   <button class="tab-btn active" id="tb-fac"   onclick="tab('fac')">施設別</button>
   <button class="tab-btn"        id="tb-usr"   onclick="tab('usr')">ユーザー別</button>
   <button class="tab-btn"        id="tb-case"  onclick="tab('case')">症例一覧</button>
+  <button class="tab-btn"        id="tb-wk"    onclick="tab('wk')">週次サマリ</button>
+  <button class="tab-btn"        id="tb-mg"    onclick="tab('mg')">統合候補<span class="tab-badge" id="mgBadge" style="display:none"></span></button>
 </div>
 <div class="wrap">
   <details>
@@ -100,10 +120,13 @@
     学習者自己評価入力率＝（評価待ち＋評価完了）÷ 症例数。　指導医評価入力率＝評価完了 ÷（評価待ち＋評価完了）。<br>
     術前目標入力率＝術前目標のある症例 ÷ 症例数。<br>
     学習者コメント入力率＝「良かった点／次回の目標」のどちらかを入力した症例 ÷ 学習者が提出した症例。　指導医コメント入力率＝同様に、評価完了した症例のうち指導医がコメントを入力した割合。<br>
+    起点＝症例を始めた側（学習者／指導医）。最初の評価＝学習者の提出と指導医の送信のうち、早く入力された側。術前目標＝手術前に学習者が入力した目標（手術後に書いた目標は含めない）。<br>
+    指導医入力中＝指導医が先に評価を入力している途中（学習者には見えません）。学習者の自己評価待ち＝指導医が先に評価を送信し、学習者の提出を待っている状態。統合済み＝同じ手術の重複として別の症例にまとめられた記録（集計には入れません）。<br>
     ディスカッション＝フィードバックへの追加コメントの件数。　評価所要日数＝学習者の提出から指導医の評価完了までの平均日数。<br>指導医コメントへの評価入力率＝学習者が★評価を入力した症例 ÷ 評価完了した症例（星は後から選び直せるため、評価日時は最後に選んだ時刻）。　リマインド＝提出から3日経過しても未評価の症例に、指導医へ1回だけ送るメール。リマインド後の評価入力率＝リマインドを送った症例のうち、その後に評価完了した割合。　リマインドから評価までの平均日数＝リマインド送信から評価完了までの日数（リマインド後に完了した症例のみ）。
   </details>
 
   <div id="msg" class="loading">読み込み中...</div>
+  <div class="mg-banner" id="mgBanner"><span id="mgBannerTxt"></span><button class="btn" onclick="tab('mg')">確認する</button></div>
 
   <div id="panel-fac" class="panel active">
     <div class="cards" id="cards"></div>
@@ -123,12 +146,40 @@
   <div id="panel-case" class="panel">
     <div class="toolbar">
       <select id="fCaseFac" onchange="renderCase()"></select>
-      <select id="fCaseSt" onchange="renderCase()"><option value="">状態：すべて</option><option value="draft">下書き</option><option value="pending">評価待ち</option><option value="reviewed">評価完了</option></select>
+      <select id="fCaseSt" onchange="renderCase()"><option value="">状態：すべて</option><option value="draft">下書き（学習者）</option><option value="e_draft">指導医入力中</option><option value="pending">評価待ち（指導医の評価待ち）</option><option value="e_sent">学習者の自己評価待ち</option><option value="reviewed">評価完了</option><option value="merged">統合済み</option></select>
+      <select id="fCasePat" onchange="renderCase()"><option value="">起点・順序：すべて</option><option value="L">最初の評価：学習者</option><option value="E">最初の評価：指導医</option><option value="N">最初の評価：未入力</option></select>
+      <select id="fCaseGoal" onchange="renderCase()"><option value="">術前目標：すべて</option><option value="1">術前に入力あり</option><option value="0">術前の入力なし</option></select>
       <input id="fCaseQ" placeholder="術式で検索" oninput="renderCase()">
       <button class="btn" onclick="csv('case')">⬇ CSV（症例一覧・全項目）</button>
       <span class="meta" id="metaCase"></span>
     </div>
     <div class="tbl-box"><table id="tblCase"></table></div>
+  </div>
+
+  <div id="panel-wk" class="panel">
+    <div class="toolbar">
+      <select id="fWkFac" onchange="renderWk()"></select>
+      <select id="fWkN" onchange="renderWk()"><option value="8">直近8週</option><option value="12" selected>直近12週</option><option value="26">直近26週</option><option value="52">直近52週</option></select>
+      <button class="btn" onclick="csv('wk')">⬇ CSV（週ごとの推移）</button>
+      <span class="meta" id="metaWk"></span>
+    </div>
+    <div class="cards" id="wkCards"></div>
+    <div class="sec-t">最初の評価が、学習者か指導医か（術前目標の有無との組み合わせ）</div>
+    <div class="note-s">通常の症例のみ（指導者の自己評価・統合済みは除く）。「最初の評価」は、学習者の提出と指導医の送信のうち早い方です。まだどちらも提出されていない症例は「未入力」です。</div>
+    <div class="tbl-box" style="max-height:none"><table id="tblPat"></table></div>
+    <div class="sec-t">週ごとの推移</div>
+    <div class="note-s">「新規症例」は症例の作成週、「最初の評価」は最初の評価が入力された週で数えています。</div>
+    <div class="tbl-box" style="max-height:none"><table id="tblWk"></table></div>
+    <div class="sec-t">未完了の症例と、止まっている理由</div>
+    <div class="tbl-box" style="max-height:none"><table id="tblWait"></table></div>
+    <div class="sec-t">止まっている症例の一覧（経過日数が長い順）</div>
+    <div class="note-s">「術前目標のみ（手術前）」は、これから手術を行う症例のため含めていません。リマインドは、学習者への自己評価依頼（2・5・7日後）／一時保存の更新なし（1・4日後）／手術日を過ぎた目標のみ（1日後）の送信回数です。</div>
+    <div class="tbl-box"><table id="tblStall"></table></div>
+  </div>
+
+  <div id="panel-mg" class="panel">
+    <div class="note-s" style="margin:0 0 12px">同じ施設・同じ学習者・同じ指導医・同じ手術日で、学習者側と指導医側が別々に登録された症例の組です。<b>同じ手術</b>であれば「統合」、別の手術であれば「別の手術として確定」を選んでください（統合は管理者のみ実行できます）。</div>
+    <div id="mgList"></div>
   </div>
 </div>
 
@@ -150,9 +201,12 @@ function openDemo(sel) { var v = sel.value; sel.value = ''; if (v) location.href
 function logout() { sessionStorage.clear(); location.href = 'index.html'; }
 
 let D = null;                       // サーバーから取得した全データ
-const sortState = { fac: null, usr: null, case: null };
+let caseById = {}, activeTab = 'fac';
+const sortState = { fac: null, usr: null, case: null, stall: null };
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const STJ = { draft: '下書き', pending: '評価待ち', reviewed: '評価完了' };
+const STJ = { draft: '下書き', e_draft: '指導医入力中', pending: '評価待ち', e_sent: '学習者の自己評価待ち', reviewed: '評価完了', merged: '統合済み' };
+const WHO = { learner: '学習者', evaluator: '指導医' };
+const WAIT_J = { learner_self: '学習者の自己評価待ち（指導医が先に評価済み）', evaluator_eval: '指導医の評価待ち（学習者が提出済み）', evaluator_draft: '指導医が入力途中のまま', learner_draft: '学習者が一時保存のまま', goal_after: '術前目標のみ・手術日を過ぎても評価が未入力', goal_before: '術前目標のみ（手術前）' };
 const CTJ = { '': '通常', peer: '指導者の自己評価（評価者：指導医）', upward: '指導者の自己評価（評価者：学習者）' };
 
 async function gasCall(data) {
@@ -165,18 +219,22 @@ async function load() {
     const res = await gasCall({ action: 'getAdminOverview', facilityCode, userId, pin });
     if (!res.success) { m.className = 'err'; m.textContent = res.error || '取得に失敗しました'; return; }
     D = res; m.style.display = 'none';
-    fillFacilitySelects(); renderFac(); renderUsr(); renderCase();
+    caseById = {}; D.cases.forEach(c => { caseById[c.id] = c; });
+    fillFacilitySelects(); renderFac(); renderUsr(); renderCase(); renderMg(); if (activeTab === 'wk') renderWk();
   } catch (e) { m.className = 'err'; m.textContent = '接続エラー。しばらくしてから再試行してください。'; }
 }
 function fillFacilitySelects() {
   const opts = '<option value="">施設：すべて</option>' + D.facilities.map(f => `<option value="${esc(f.facilityCode)}">${esc(f.facilityCode)} ${esc(f.facilityName)}</option>`).join('');
-  ['fUsrFac', 'fCaseFac'].forEach(id => { const el = document.getElementById(id); const v = el.value; el.innerHTML = opts; el.value = v; });
+  ['fUsrFac', 'fCaseFac', 'fWkFac'].forEach(id => { const el = document.getElementById(id); const v = el.value; el.innerHTML = opts; el.value = v; });
 }
 function tab(t) {
-  ['fac', 'usr', 'case'].forEach(k => {
+  activeTab = t;
+  ['fac', 'usr', 'case', 'wk', 'mg'].forEach(k => {
     document.getElementById('tb-' + k).classList.toggle('active', k === t);
     document.getElementById('panel-' + k).classList.toggle('active', k === t);
   });
+  if (t === 'wk' && D) renderWk();
+  window.scrollTo(0, 0);
 }
 
 // ---------- 共通：率の表示と並べ替え ----------
@@ -200,7 +258,7 @@ function sortRows(key, rows, cols) {
 function setSort(key, i) {
   const st = sortState[key];
   sortState[key] = (st && st.i === i) ? { i, asc: !st.asc } : { i, asc: true };
-  ({ fac: renderFac, usr: renderUsr, case: renderCase })[key]();
+  ({ fac: renderFac, usr: renderUsr, case: renderCase, stall: renderWk })[key]();
 }
 function table(el, key, cols, rows, totalRow) {
   const sorted = sortRows(key, rows, cols);
@@ -233,12 +291,18 @@ const FAC_COLS = [
   { h: '指導医コメントへの評価入力率', n: 1, v: f => rate(f.ratedN, f.reviewed), html: f => pct(f.ratedN, f.reviewed), csv: f => pctTxt(f.ratedN, f.reviewed) },
   { h: '同・評価(★)平均', n: 1, v: f => f.ratedN ? Math.round(f.ratingSum / f.ratedN * 100) / 100 : '' },
   { h: '同・完了から評価までの平均日数', n: 1, v: f => f.ratingDaysN ? Math.round(f.ratingDaysSum / f.ratingDaysN * 10) / 10 : '' },
+  { h: '指導医が先に入力した症例', n: 1, v: f => f.evFirstN },
+  { h: '同・割合', n: 1, v: f => rate(f.evFirstN, f.cases), html: f => pct(f.evFirstN, f.cases), csv: f => pctTxt(f.evFirstN, f.cases) },
+  { h: '指導医入力中', n: 1, v: f => f.eDraft },
+  { h: '学習者の自己評価待ち', n: 1, v: f => f.eSent },
+  { h: '指導医が先→学習者提出(日・平均)', n: 1, v: f => f.lagEN ? Math.round(f.lagESum / f.lagEN * 10) / 10 : '' },
+  { h: '統合済み', n: 1, v: f => f.merged },
   { h: 'リマインド送信件数', n: 1, v: f => f.remindedN },
   { h: 'リマインド後の評価入力率', n: 1, v: f => rate(f.remindedReviewedN, f.remindedN), html: f => pct(f.remindedReviewedN, f.remindedN), csv: f => pctTxt(f.remindedReviewedN, f.remindedN) },
   { h: 'リマインドから評価までの平均日数', n: 1, v: f => f.remindDaysN ? Math.round(f.remindDaysSum / f.remindDaysN * 10) / 10 : '' },
 ];
 function facTotal() {
-  const t = { facilityCode: '合計', facilityName: '', learners: 0, evaluators: 0, cases: 0, draft: 0, pending: 0, reviewed: 0, learnerCommentN: 0, evaluatorCommentN: 0, preOpGoalN: 0, discussionN: 0, tatSum: 0, tatN: 0, ratedN: 0, ratingSum: 0, ratingDaysSum: 0, ratingDaysN: 0, remindedN: 0, remindedReviewedN: 0, remindDaysSum: 0, remindDaysN: 0, selfN: 0, selfReviewed: 0 };
+  const t = { facilityCode: '合計', facilityName: '', learners: 0, evaluators: 0, cases: 0, draft: 0, pending: 0, reviewed: 0, learnerCommentN: 0, evaluatorCommentN: 0, preOpGoalN: 0, discussionN: 0, tatSum: 0, tatN: 0, ratedN: 0, ratingSum: 0, ratingDaysSum: 0, ratingDaysN: 0, remindedN: 0, remindedReviewedN: 0, remindDaysSum: 0, remindDaysN: 0, selfN: 0, selfReviewed: 0, eDraft: 0, eSent: 0, merged: 0, evFirstN: 0, lagESum: 0, lagEN: 0 };
   D.facilities.forEach(f => Object.keys(t).forEach(k => { if (typeof t[k] === 'number') t[k] += f[k]; }));
   return t;
 }
@@ -247,7 +311,8 @@ function renderFac() {
   const cd = (k, v, s) => `<div class="card"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s || ''}</div></div>`;
   document.getElementById('cards').innerHTML =
     cd('参加者', T.learners + T.evaluators, `学習者 ${T.learners}／指導医 ${T.evaluators}`) +
-    cd('症例数', T.cases, `下書き ${T.draft}／評価待ち ${T.pending}／完了 ${T.reviewed}`) +
+    cd('症例数', T.cases, `下書き ${T.draft}／指導医入力中 ${T.eDraft}／評価待ち ${T.pending}／自己評価待ち ${T.eSent}／完了 ${T.reviewed}`) +
+    cd('指導医が先に入力', Math.round((rate(T.evFirstN, T.cases) || 0) * 100) + '%', `${T.evFirstN}/${T.cases}`) +
     cd('相互評価完了率', Math.round((rate(T.reviewed, T.cases) || 0) * 100) + '%', `${T.reviewed}/${T.cases}`) +
     cd('学習者コメント入力率', Math.round((rate(T.learnerCommentN, sub(T)) || 0) * 100) + '%', `${T.learnerCommentN}/${sub(T)}`) +
     cd('指導医コメント入力率', Math.round((rate(T.evaluatorCommentN, T.reviewed) || 0) * 100) + '%', `${T.evaluatorCommentN}/${T.reviewed}`);
@@ -293,6 +358,11 @@ const CASE_COLS = [
   { h: '症例No.', v: c => c.caseNo },
   { h: '種別', v: c => CTJ[c.caseType || ''] || c.caseType },
   { h: '術式', v: c => c.procedure },
+  { h: '起点', v: c => c.caseType ? '' : (WHO[c.initiatedBy] || '') },
+  { h: '最初の評価', v: c => c.caseType ? '' : (WHO[c.firstEvalBy] || '未入力') },
+  { h: '術前目標', v: c => c.caseType ? '' : (c.goalPreop ? '術前に入力' : (c.hasGoal ? '術後に入力' : 'なし')) },
+  { h: '最初の評価→もう一方(日)', n: 1, v: c => c.lagDays },
+  { h: '止まっている理由', v: c => c.wait && c.wait.kind ? WAIT_J[c.wait.kind] + '（' + c.wait.days + '日）' : '' },
   { h: '学習者', v: c => c.learnerLabel },
   { h: '指導医', v: c => c.evaluatorLabel },
   { h: '状態', v: c => STJ[c.status] || c.status, html: c => `<span class="st st-${esc(c.status)}">${esc(STJ[c.status] || c.status)}</span>` },
@@ -309,19 +379,145 @@ const CASE_COLS = [
   { h: '術前目標', v: c => c.preOpGoal ? '○' : '' },
   { h: '学習者コメント', v: c => (c.fbGoodL || c.fbGoalL) ? '○' : '' },
   { h: '指導医コメント', v: c => (c.fbGoodE || c.fbGoalE) ? '○' : '' },
+  { h: '★術前目標(指導医)', n: 1, v: c => c.rateGoalE }, { h: '★振り返り(指導医)', n: 1, v: c => c.rateGoodE }, { h: '★次回の目標(指導医)', n: 1, v: c => c.rateNextE },
+  { h: '統合', v: c => c.mergeRef || '' },
   { h: 'ディスカッション', n: 1, v: c => c.discussionN },
   { h: 'P(学習者)', n: 1, v: c => c.perfL }, { h: 'P(指導医)', n: 1, v: c => c.perfE },
   { h: '自律度(学習者)', n: 1, v: c => c.autoL }, { h: '自律度(指導医)', n: 1, v: c => c.autoE },
 ];
 function caseFiltered() {
   const f = document.getElementById('fCaseFac').value, s = document.getElementById('fCaseSt').value, q = document.getElementById('fCaseQ').value.trim();
-  return D.cases.filter(c => (!f || c.facilityCode === f) && (!s || c.status === s) && (!q || String(c.procedure).includes(q)));
+  const pat = document.getElementById('fCasePat').value, gl = document.getElementById('fCaseGoal').value;
+  return D.cases.filter(c => (!f || c.facilityCode === f) && (!s || c.status === s) && (!q || String(c.procedure).includes(q))
+    && (!pat || (c.caseType ? false : (pat === 'L' ? c.firstEvalBy === 'learner' : pat === 'E' ? c.firstEvalBy === 'evaluator' : !c.firstEvalBy)))
+    && (!gl || (c.caseType ? false : (gl === '1' ? !!c.goalPreop : !c.goalPreop))));
 }
 function renderCase() {
   if (!D) return;
   const rows = caseFiltered();
   table('tblCase', 'case', CASE_COLS, rows);
   document.getElementById('metaCase').textContent = rows.length + ' 件';
+}
+
+// ---------- 週次サマリ ----------
+const mondayOf = ds => { const m = String(ds || '').match(/^(\d{4})-(\d{2})-(\d{2})/); if (!m) return ''; const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])); const w = (d.getUTCDay() + 6) % 7; d.setUTCDate(d.getUTCDate() - w); return d.toISOString().slice(0, 10); };
+const todayJ = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const wkLabel = mon => { const d = new Date(mon + 'T00:00:00Z'), e = new Date(d.getTime() + 6 * 86400000); return `${d.getUTCMonth() + 1}/${d.getUTCDate()}〜${e.getUTCMonth() + 1}/${e.getUTCDate()}`; };
+const pc1 = (a, b) => b ? Math.round(a / b * 100) + '%' : '–';
+function wkCases() {
+  const f = document.getElementById('fWkFac').value;
+  return D.cases.filter(c => !c.caseType && c.status !== 'merged' && (!f || c.facilityCode === f));
+}
+function wkRows() {
+  const n = +document.getElementById('fWkN').value, cs = wkCases();
+  const cur = mondayOf(todayJ()), weeks = [];
+  for (let i = n - 1; i >= 0; i--) { const d = new Date(cur + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() - 7 * i); weeks.push(d.toISOString().slice(0, 10)); }
+  const m = {}; weeks.forEach(w => { m[w] = { wk: w, newL: 0, newE: 0, goal: 0, firstL: 0, firstE: 0, done: 0, lagS: 0, lagN: 0 }; });
+  cs.forEach(c => {
+    const a = m[mondayOf(c.createdAt)]; if (a) { if (c.initiatedBy === 'evaluator') a.newE++; else a.newL++; if (c.goalPreop) a.goal++; }
+    const b = m[mondayOf(c.firstEvalAt)]; if (b) { if (c.firstEvalBy === 'evaluator') b.firstE++; else if (c.firstEvalBy === 'learner') b.firstL++; }
+    const d = m[mondayOf(c.reviewedAt)]; if (d) { d.done++; if (c.lagDays !== '' && c.firstEvalBy === 'evaluator') { d.lagS += +c.lagDays; d.lagN++; } }
+  });
+  return weeks.map(w => m[w]);
+}
+function renderWk() {
+  if (!D) return;
+  const cs = wkCases(), rows = wkRows();
+  const cd = (k, v, s) => `<div class="card"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s || ''}</div></div>`;
+  const started = cs.filter(c => c.firstEvalBy), fE = started.filter(c => c.firstEvalBy === 'evaluator').length;
+  const stall = cs.filter(c => c.wait && c.wait.kind && c.wait.kind !== 'goal_before' && c.status !== 'reviewed');
+  document.getElementById('wkCards').innerHTML =
+    cd('通常の症例', cs.length, `評価完了 ${cs.filter(c => c.status === 'reviewed').length}`) +
+    cd('最初の評価が指導医', pc1(fE, started.length), `${fE}/${started.length}（最初の評価が入力済みの症例）`) +
+    cd('術前に目標を入力', pc1(cs.filter(c => c.goalPreop).length, cs.length), `${cs.filter(c => c.goalPreop).length}/${cs.length}`) +
+    cd('止まっている症例', stall.length, '未完了で、次の入力待ちのもの');
+
+  // 4パターン
+  const pats = [['術前目標あり', 1], ['術前目標なし', 0]], first = [['学習者が先', 'learner'], ['指導医が先', 'evaluator']];
+  let ph = '<thead><tr><th>パターン</th><th class="n">症例数</th><th class="n">評価完了</th><th class="n">完了率</th><th class="n">最初の評価→もう一方の平均(日)</th></tr></thead><tbody>';
+  pats.forEach(([gl, gv]) => first.forEach(([fl, fv]) => {
+    const g = cs.filter(c => !!c.goalPreop === !!gv && c.firstEvalBy === fv), dn = g.filter(c => c.status === 'reviewed'), lg = dn.filter(c => c.lagDays !== '');
+    ph += `<tr><td>${gl}・${fl}</td><td class="n">${g.length}</td><td class="n">${dn.length}</td><td class="n">${pc1(dn.length, g.length)}</td><td class="n">${lg.length ? Math.round(lg.reduce((a, c) => a + +c.lagDays, 0) / lg.length * 10) / 10 : '–'}</td></tr>`;
+  }));
+  const none = cs.filter(c => !c.firstEvalBy);
+  ph += `<tr><td style="color:#718096">最初の評価が未入力（目標あり ${none.filter(c => c.goalPreop).length}／目標なし ${none.filter(c => !c.goalPreop).length}）</td><td class="n">${none.length}</td><td class="n" colspan="3"></td></tr></tbody>`;
+  document.getElementById('tblPat').innerHTML = ph;
+
+  // 週ごと
+  const mx = Math.max(1, ...rows.map(r => r.newL + r.newE));
+  document.getElementById('tblWk').innerHTML = '<thead><tr><th>週（月曜始まり）</th><th class="n">新規：学習者起点</th><th class="n">新規：指導医起点</th><th>指導医起点の割合</th><th class="n">術前目標あり</th><th class="n">最初の評価：学習者</th><th class="n">最初の評価：指導医</th><th class="n">評価完了</th><th class="n">指導医が先→学習者提出(日)</th></tr></thead><tbody>' +
+    rows.slice().reverse().map(r => { const t = r.newL + r.newE; return `<tr><td>${wkLabel(r.wk)}</td><td class="n">${r.newL}</td><td class="n">${r.newE}</td><td><span class="bar" style="width:${Math.round(r.newE / mx * 90)}px"></span>${pc1(r.newE, t)}</td><td class="n">${r.goal}</td><td class="n">${r.firstL}</td><td class="n">${r.firstE}</td><td class="n">${r.done}</td><td class="n">${r.lagN ? Math.round(r.lagS / r.lagN * 10) / 10 : '–'}</td></tr>`; }).join('') + '</tbody>';
+
+  // 止まっている理由
+  const kinds = ['learner_self', 'evaluator_eval', 'evaluator_draft', 'learner_draft', 'goal_after', 'goal_before'];
+  const rem = c => (c.remindS || 0) + (c.remindD || 0) + (c.remindG || 0) + (c.remindE || 0) + (c.reminderSentAt ? 1 : 0);
+  document.getElementById('tblWait').innerHTML = '<thead><tr><th>止まっている理由</th><th class="n">件数</th><th class="n">平均経過日数</th><th class="n">最長(日)</th><th class="n">リマインド送信済みの症例</th></tr></thead><tbody>' +
+    kinds.map(k => { const g = cs.filter(c => c.wait && c.wait.kind === k && c.status !== 'reviewed'); const dd = g.map(c => +c.wait.days || 0);
+      return `<tr><td>${esc(WAIT_J[k])}</td><td class="n">${g.length}</td><td class="n">${g.length ? Math.round(dd.reduce((a, b) => a + b, 0) / g.length * 10) / 10 : '–'}</td><td class="n">${g.length ? Math.max(...dd) : '–'}</td><td class="n">${g.filter(c => rem(c) > 0).length}</td></tr>`; }).join('') + '</tbody>';
+
+  // 止まっている症例
+  const list = stall.map(c => Object.assign({}, c, { _days: +c.wait.days || 0, _rem: rem(c) }));
+  const SC = [
+    { h: '詳細', v: c => '', html: c => `<button class="open-btn" onclick="openCase('${esc(c.id)}')">開く</button>` },
+    { h: '施設コード', v: c => c.facilityCode }, { h: '症例No.', v: c => c.caseNo }, { h: '術式', v: c => c.procedure },
+    { h: '学習者', v: c => c.learnerLabel }, { h: '指導医', v: c => c.evaluatorLabel }, { h: '手術日', v: c => c.surgeryDate },
+    { h: '止まっている理由', v: c => WAIT_J[c.wait.kind] }, { h: '経過日数', n: 1, v: c => c._days },
+    { h: 'リマインド(回)', n: 1, v: c => c._rem },
+  ];
+  if (!sortState.stall) sortState.stall = { i: 8, asc: false };
+  table('tblStall', 'stall', SC, list);
+  document.getElementById('metaWk').textContent = '更新：' + D.generatedAt;
+}
+function wkCsvRows() {
+  const rows = wkRows();
+  return [['週の開始日', '新規：学習者起点', '新規：指導医起点', '術前目標あり', '最初の評価：学習者', '最初の評価：指導医', '評価完了', '指導医が先→学習者提出(日・平均)']]
+    .concat(rows.map(r => [r.wk, r.newL, r.newE, r.goal, r.firstL, r.firstE, r.done, r.lagN ? Math.round(r.lagS / r.lagN * 10) / 10 : '']));
+}
+
+// ---------- 統合候補 ----------
+const MG_TYPE = {
+  both_sent: { t: '学習者の自己評価（提出済み）と、指導医の評価（送信済み）が別々', g: '統合すると1つの症例として評価完了になり、学習者・指導医の両方に完了のメールが届きます。両者は互いの入力を見ずに独立して評価しているため、ブラインドは保たれます。' },
+  learner_draft: { t: '学習者の術前目標・一時保存の症例と、指導医が先に評価した症例が別々', g: '統合すると1つの症例にまとまり、学習者は術前目標・一時保存の内容を引き継いで、指導医の評価に対する自己評価を続けられます。' },
+  evaluator_draft: { t: '学習者が提出済みの症例と、指導医が入力途中の症例が別々', g: '統合すると、指導医の入力途中の内容が学習者の症例に移り、指導医はそのまま評価を続けられます。' },
+};
+function mgSide(c, label, cls) {
+  if (!c) return `<div class="mg-side ${cls}"><h4>${label}</h4>症例が見つかりません</div>`;
+  return `<div class="mg-side ${cls}"><h4>${label}</h4><b>${esc(c.procedure)}</b>（症例No.${esc(c.caseNo)}）<br>
+    状態：<span class="st st-${esc(c.status)}">${esc(STJ[c.status] || c.status)}</span>　起点：${esc(WHO[c.initiatedBy] || '')}<br>
+    作成日：${esc(c.createdAt)}　手術日：${esc(c.surgeryDate)}<br>
+    ${c.hasGoal ? '術前目標あり　' : ''}${c.lSubmittedAt ? '学習者提出：' + esc(c.lSubmittedAt) + '　' : ''}${c.eSubmittedAt ? '指導医送信：' + esc(c.eSubmittedAt) : ''}<br>
+    <button class="open-btn" onclick="openCase('${esc(c.id)}')">症例の詳細を開く</button></div>`;
+}
+function renderMg() {
+  const L = (D && D.mergeCandidates) || [];
+  const badge = document.getElementById('mgBadge'), ban = document.getElementById('mgBanner');
+  badge.style.display = L.length ? 'inline-block' : 'none'; badge.textContent = L.length;
+  ban.style.display = L.length ? 'flex' : 'none';
+  document.getElementById('mgBannerTxt').textContent = `⚠️ 同じ手術の可能性がある症例が ${L.length} 組あります。統合するか、別の手術として確定してください。`;
+  const el = document.getElementById('mgList');
+  if (!L.length) { el.innerHTML = '<div class="loading" style="background:#fff;border-radius:10px">統合を確認する症例はありません。</div>'; return; }
+  el.innerHTML = L.map((m, i) => {
+    const a = caseById[m.aId], b = caseById[m.bId], T = MG_TYPE[m.type] || { t: m.type, g: '' };
+    const diff = a && b && String(a.procedure).trim() !== String(b.procedure).trim();
+    return `<div class="mg-card"><span class="mg-type">${esc(T.t)}</span>
+      <div style="font-size:12.5px;color:#718096">${esc(m.facilityCode)}　手術日 ${esc(m.surgeryDate)}</div>
+      ${diff ? '<div class="mg-warn">⚠ 術式名が異なります。別の手術の可能性があります。内容を確認してください。</div>' : ''}
+      <div class="mg-pair" style="margin-top:8px">${mgSide(a, '学習者側の症例', 'l')}${mgSide(b, '指導医側の症例', 'e')}</div>
+      <div class="mg-guide"><b>操作の目安：</b>同じ日・同じ学習者・同じ指導医で、術式も同じなら、同じ手術の可能性が高いです。${esc(T.g)}<br>「別の手術として確定」を選ぶと、この組は以後、統合候補に表示されません。</div>
+      <div class="mg-act"><button class="btn" id="mgM${i}" onclick="doMerge(${i},'merge')">同じ手術として統合する</button><button class="btn sub" id="mgS${i}" onclick="doMerge(${i},'separate')">別の手術として確定</button></div></div>`;
+  }).join('');
+}
+async function doMerge(i, action) {
+  const m = D.mergeCandidates[i]; if (!m) return;
+  const msg = action === 'merge' ? 'この2件を1つの症例に統合します。元に戻せません（統合した側の記録は「統合済み」として残ります）。よろしいですか？' : 'この2件を別の手術として確定します。以後、統合候補に表示されません。よろしいですか？';
+  if (!confirm(msg)) return;
+  const b1 = document.getElementById('mgM' + i), b2 = document.getElementById('mgS' + i);
+  if (b1) b1.disabled = true; if (b2) b2.disabled = true;
+  try {
+    const res = await gasCall({ action: 'resolveMerge', facilityCode, userId, pin, idA: m.aId, idB: m.bId, mergeAction: action });
+    if (!res.success) { alert(res.error || '操作できませんでした'); if (b1) b1.disabled = false; if (b2) b2.disabled = false; return; }
+    await load();
+  } catch (e) { alert('接続エラーが発生しました。'); if (b1) b1.disabled = false; if (b2) b2.disabled = false; }
 }
 
 // ---------- 症例の詳細（学習者・指導医の画面と同じ内容を読み取り専用で表示） ----------
@@ -385,9 +581,11 @@ function caseDetailHtml(r, comments) {
   const stars = r.commentRating ? `　／　指導医コメントへの評価: ${'★'.repeat(+r.commentRating)}${'☆'.repeat(Math.max(0, 5 - r.commentRating))}` : '';
   return `${kind}${note}<div class="head-box"><strong>症例No.${esc(r.caseNo)}</strong>　${esc(r.procedure)}${r.surgeryDate ? '　／　手術日: ' + esc(fmtSD(r.surgeryDate)) : ''}<br>
     ${esc(r.facilityCode)} ${esc(r.facilityName)}<br>${W}: ${esc(r.learnerName || '(不明)')}　／　${E}: ${esc(r.evaluatorName || '(不明)')}　／　状態: <span class="st st-${esc(r.status)}">${esc(STJ[r.status] || r.status)}</span>${r.reviewedAt ? '　／　評価完了日: ' + esc(fmtD(r.reviewedAt)) : ''}${stars}</div>
+    <div class="head-box" style="background:#f0f7ff">入力の流れ：起点＝<b>${esc(WHO[r.initiatedBy] || '')}</b>　／　最初の評価＝<b>${esc(WHO[r.firstEvalBy] || '未入力')}</b>　／　術前目標＝<b>${r.goalPreop ? '術前に入力' : (r.preOpGoal ? '術後に入力' : 'なし')}</b>${r.learnerSubmittedAt ? '<br>学習者の提出：' + esc(fmtD(r.learnerSubmittedAt)) : ''}${r.evaluatorSubmittedAt ? '　指導医の送信：' + esc(fmtD(r.evaluatorSubmittedAt)) : ''}${r.mergeRef ? '<br>統合：' + esc(r.mergeRef) : ''}</div>
     ${compareTable(r)}
     <div class="chart-card"><div class="chart-title">Technical Scale レーダーチャート</div><canvas id="caseRadarCanvas" height="220"></canvas></div>
     ${r.preOpGoal ? `<div class="sec-hdr">術前目標</div><div class="goal-box">${esc(r.preOpGoal)}</div>` : ''}
+    ${(r.rateGoalE || r.rateGoodE || r.rateNextE) ? `<div class="ro-note" style="background:#fffaf0">指導医の★評価（学習者には非公開）　術前目標：${r.rateGoalE ? r.rateGoalE + '/5' : '–'}　振り返り：${r.rateGoodE ? r.rateGoodE + '/5' : '–'}　次回の目標：${r.rateNextE ? r.rateNextE + '/5' : '–'}</div>` : ''}
     <div class="sec-hdr">${W}のフィードバック</div>${fbBlock(r.learnerFeedbackGood, r.learnerFeedbackGoal, 'fb-box-l')}
     ${up ? '' : threadHtml(comments.filter(c => c.target === 'learner'))}
     <div class="sec-hdr">${E}のフィードバック</div>${up ? '<div class="none-txt">この種別（評価者が学習者）では、評価者の自由記述・コメント・★評価はありません。</div>' : fbBlock(r.evaluatorFeedbackGood, r.evaluatorFeedbackGoal, 'fb-box-e') + threadHtml(comments.filter(c => c.target === 'evaluator'))}`;
@@ -420,12 +618,14 @@ function csv(t) {
     dl(`PERFORM_施設別_${stamp()}.csv`, [FAC_COLS.map(c => c.h)].concat(rows.map(f => FAC_COLS.map(c => c.csv ? c.csv(f) : c.v(f)))));
   } else if (t === 'usr') {
     dl(`PERFORM_ユーザー別_${stamp()}.csv`, [USR_COLS.map(c => c.h)].concat(usrFiltered().map(u => USR_COLS.map(c => c.csv ? c.csv(u) : c.v(u)))));
+  } else if (t === 'wk') {
+    dl(`PERFORM_週ごと_${stamp()}.csv`, wkCsvRows());
   } else {
     const H = ['症例ID','種別','施設コード','施設名','症例No.','術式','学習者(匿名)','指導医(匿名)','状態','作成日','提出日','評価日','術前目標',
       '自律度(学習者)','パフォーマンス(学習者)','難易度(学習者)','TS1(学習者)','TS2(学習者)','TS3(学習者)','TS4(学習者)','TS5(学習者)','良かった点(学習者)','次回の目標・改善点(学習者)',
-      '自律度(指導医)','パフォーマンス(指導医)','難易度(指導医)','TS1(指導医)','TS2(指導医)','TS3(指導医)','TS4(指導医)','TS5(指導医)','良かった点(指導医)','次回の目標・改善点(指導医)','ディスカッション件数','提出→評価(日)','リマインド送信','リマインド→評価(日)','コメント評価(★)','コメント評価日時','評価完了→コメント評価(日)','結果を閲覧'];
+      '自律度(指導医)','パフォーマンス(指導医)','難易度(指導医)','TS1(指導医)','TS2(指導医)','TS3(指導医)','TS4(指導医)','TS5(指導医)','良かった点(指導医)','次回の目標・改善点(指導医)','ディスカッション件数','提出→評価(日)','リマインド送信','リマインド→評価(日)','コメント評価(★)','コメント評価日時','評価完了→コメント評価(日)','結果を閲覧','起点','最初の評価','術前目標(術前に入力=1)','最初の評価→もう一方(日)','★術前目標(指導医)','★振り返り(指導医)','★次回の目標(指導医)','統合'];
     dl(`PERFORM_症例一覧_${stamp()}.csv`, [H].concat(caseFiltered().map(c => [c.id, CTJ[c.caseType || ''] || c.caseType, c.facilityCode, c.facilityName, c.caseNo, c.procedure, c.learnerLabel, c.evaluatorLabel, STJ[c.status] || c.status, c.createdAt, c.submittedAt, c.reviewedAt, c.preOpGoal,
-      c.autoL, c.perfL, c.diffL, c.ts1L, c.ts2L, c.ts3L, c.ts4L, c.ts5L, c.fbGoodL, c.fbGoalL, c.autoE, c.perfE, c.diffE, c.ts1E, c.ts2E, c.ts3E, c.ts4E, c.ts5E, c.fbGoodE, c.fbGoalE, c.discussionN, c.submitToReviewDays, c.reminderSentAt, c.reminderToReviewDays, c.commentRating, c.commentRatedAt, c.reviewToRatingDays, c.feedbackViewed ? 1 : 0])));
+      c.autoL, c.perfL, c.diffL, c.ts1L, c.ts2L, c.ts3L, c.ts4L, c.ts5L, c.fbGoodL, c.fbGoalL, c.autoE, c.perfE, c.diffE, c.ts1E, c.ts2E, c.ts3E, c.ts4E, c.ts5E, c.fbGoodE, c.fbGoalE, c.discussionN, c.submitToReviewDays, c.reminderSentAt, c.reminderToReviewDays, c.commentRating, c.commentRatedAt, c.reviewToRatingDays, c.feedbackViewed ? 1 : 0, c.caseType ? '' : (WHO[c.initiatedBy] || ''), c.caseType ? '' : (WHO[c.firstEvalBy] || ''), c.caseType ? '' : (c.goalPreop ? 1 : 0), c.lagDays, c.rateGoalE, c.rateGoodE, c.rateNextE, c.mergeRef])));
   }
 }
 load();

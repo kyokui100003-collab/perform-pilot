@@ -101,6 +101,32 @@
   .error-box { background: #fff5f5; border-left: 3px solid #e53e3e; padding: 11px 14px; border-radius: 0 8px 8px 0; color: #c53030; font-size: 13px; margin-bottom: 12px; }
   .section-label { font-size: 13px; font-weight: 700; color: #888; margin: 18px 0 8px; text-transform: uppercase; letter-spacing: 0.5px; }
   .section-label:first-child { margin-top: 0; }
+  /* ホーム：新規開始／評価依頼／進行中 */
+  .new-start-btn { width: 100%; padding: 18px; background: #2ab5a8; color: #fff; border: none; border-radius: 14px; font-size: 17px; font-weight: 800; cursor: pointer; box-shadow: 0 3px 12px rgba(42,181,168,0.35); font-family: inherit; }
+  .new-start-sub { font-size: 12px; color: #888; text-align: center; margin: 7px 0 18px; line-height: 1.55; }
+  .req-box { background: #fff5f5; border: 2px solid #e53e3e; border-radius: 14px; padding: 14px 14px 6px; margin-bottom: 18px; }
+  .req-box-title { font-size: 15px; font-weight: 800; color: #c53030; margin-bottom: 3px; display: flex; align-items: center; gap: 8px; }
+  .req-box-title .cnt { background: #e53e3e; color: #fff; border-radius: 99px; font-size: 12px; padding: 1px 10px; }
+  .req-box-sub { font-size: 12px; color: #9b2c2c; margin-bottom: 11px; line-height: 1.55; }
+  .req-card { background: #fff; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; border-left: 5px solid #e53e3e; box-shadow: 0 2px 8px rgba(0,0,0,0.07); cursor: pointer; }
+  .req-card.other { border-left-color: #d69e2e; }
+  .req-tag { display: inline-block; background: #e53e3e; color: #fff; font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 99px; }
+  .req-tag.other { background: #d69e2e; }
+  .req-tag.saved { background: #fff3cd; color: #92400e; margin-left: 4px; }
+  .req-go { display: block; width: 100%; margin-top: 10px; padding: 11px; background: #e53e3e; color: #fff; border: none; border-radius: 9px; font-size: 14px; font-weight: 800; cursor: pointer; font-family: inherit; }
+  .req-go.other { background: #d69e2e; }
+  .prog-card { background: #fff; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; border-left: 5px solid #2b6cb0; box-shadow: 0 2px 8px rgba(0,0,0,0.07); cursor: pointer; }
+  .prog-card.saved { border-left-color: #d69e2e; }
+  .prog-tag { display: inline-block; background: #ebf8ff; color: #2b6cb0; font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 99px; }
+  .prog-tag.saved { background: #fff3cd; color: #92400e; }
+  .prog-go { display: block; width: 100%; margin-top: 10px; padding: 11px; background: #fff; color: #2b6cb0; border: 2px solid #2b6cb0; border-radius: 9px; font-size: 14px; font-weight: 800; cursor: pointer; font-family: inherit; }
+  .prog-go.saved { color: #92400e; border-color: #d69e2e; }
+  .dup-row { border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+  .dup-row .dup-st { font-size: 12px; color: #975a16; margin: 3px 0 8px; }
+  .dup-btn { background: #2ab5a8; color: #fff; border: none; border-radius: 8px; padding: 10px 14px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .dup-btn.alt { background: #fff; color: #2ab5a8; border: 1.5px solid #2ab5a8; width: 100%; margin-top: 4px; }
+  .req-notice { background: #fff5f5; border: 1.5px solid #feb2b2; border-radius: 10px; padding: 11px 14px; font-size: 13px; color: #9b2c2c; line-height: 1.6; margin-bottom: 12px; }
+  .transp-note { font-size: 11.5px; color: #888; margin-top: 8px; line-height: 1.55; }
 
   /* 目標ボックス */
   .goal-box { background: #f0faf9; border: 1.5px solid #b2ead6; border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; }
@@ -251,6 +277,14 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- 同じ手術の可能性がある症例の確認 -->
+<div class="modal-overlay" id="dupModal">
+  <div class="modal">
+    <div class="modal-hdr"><h2>同じ手術ではありませんか？</h2><button class="close-btn" onclick="closeDup()">×</button></div>
+    <div class="modal-body" id="dupBody" style="padding:18px 20px"></div>
+  </div>
+</div>
 
 <!-- 送信完了 -->
 <div class="success-overlay" id="successOverlay">
@@ -427,8 +461,13 @@ const MOCK_RECORDS = [
     evaluatorAutonomy:null, evaluatorPerformance:null, evaluatorDifficulty:null, evaluatorTS:{}, evaluatorFeedbackGood:'', evaluatorFeedbackGoal:'' },
 ];
 const MOCK_DRAFTS = [
-  { id:'d01', caseNo:'003', surgeryDate:'2026-10-08', procedure:'腹腔鏡下胆嚢摘出術', evaluatorId:'usr_e01', evaluatorName:'デモ評価者1', preOpGoal:'器具操作をスムーズに行う', goalEntryMode:'preop', createdAt:new Date().toISOString() }
+  { id:'d01', caseNo:'003', surgeryDate:'2026-10-08', procedure:'腹腔鏡下胆嚢摘出術', evaluatorId:'usr_e02', evaluatorName:'デモ評価者1', preOpGoal:'器具操作をスムーズに行う', goalEntryMode:'preop', hasContent:false, createdAt:new Date().toISOString() },
+  { id:'d02', caseNo:'004', surgeryDate:'2026-10-12', procedure:'腹腔鏡下虫垂切除術', evaluatorId:'usr_e02', evaluatorName:'デモ評価者1', preOpGoal:'', goalEntryMode:'', hasContent:true, autonomy:3, performance:null, difficulty:2, feedbackGood:'手順を意識できた', feedbackGoal:'', createdAt:new Date().toISOString() }
 ];
+const MOCK_REQUESTS = [
+  { id:'q01', caseNo:'005', surgeryDate:'2026-10-18', procedure:'腹腔鏡下結腸右半切除術', evaluatorId:'usr_e02', evaluatorName:'デモ評価者1', preOpGoal:'', goalEntryMode:'', hasContent:false, eSentAt:new Date(Date.now() - 3 * 86400000).toISOString(), initiatedBy:'evaluator', createdAt:new Date().toISOString() }
+];
+let mockRequestStore = [...MOCK_REQUESTS];
 
 async function gasCall(data) {
   if (DEMO_MODE) return mockGasCall(data);
@@ -447,13 +486,16 @@ function mockGasCall(data) {
       resolve({ success:true, id:d.id, caseNo:d.caseNo });
     }
     else if (data.action === 'submitLearner') {
+      const wasReq = mockRequestStore.some(d => d.id === data.recordId);
       mockDraftStore = mockDraftStore.filter(d => d.id !== data.recordId);
-      resolve({ success:true, id:'r_new_'+Date.now(), caseNo:'00X' });
+      mockRequestStore = mockRequestStore.filter(d => d.id !== data.recordId);
+      resolve({ success:true, id:'r_new_'+Date.now(), caseNo:'00X', completed: wasReq });
     }
     else if (data.action === 'saveLearnerDraft') resolve({ success:true });
     else if (data.action === 'getLearnerInitialData') resolve({ success:true,
       evaluators: SELF_MODE ? MOCK_EVALUATORS : MOCK_EVALUATORS.filter(e => e.role === 'evaluator'),
       drafts: mockDraftStore,
+      requests: SELF_MODE ? [] : mockRequestStore,
       results: SELF_MODE ? MOCK_SELF_RECORDS : MOCK_RECORDS.filter(r => r.status === 'reviewed'),
       ratingRequests: SELF_MODE ? [] : [{ id:'r03', caseNo:'001', procedure:'腹腔鏡下胃切除術', learnerName:'山田 一郎 先生', caseType:'upward' }] });
     else if (data.action === 'editLearnerComment') resolve({ success:true });
@@ -520,6 +562,7 @@ function switchSubTab(tab) {
 let myDrafts = [];
 let evaluatorsCache = [];
 let ratingRequests = [];   // 自分が評価者として依頼されている症例（指導者の自己評価）
+let myRequests = [];       // 指導医が先に評価を入力した症例（自己評価の入力待ち）
 
 async function initForm() {
   const c = document.getElementById('formContainer');
@@ -533,6 +576,7 @@ async function initForm() {
     myDrafts = res.drafts;
     allResults = res.results;
     ratingRequests = SELF_MODE ? [] : (res.ratingRequests || []);
+    myRequests = (res.requests || []).map(d => Object.assign({}, d, { _req: true }));
     resultsLoaded = true;
     renderCaseList();
     renderResultList();
@@ -550,37 +594,59 @@ function jumpToLinkedCase() {
   if (id && ratingRequests.some(x => String(x.id) === String(id))) { location.href = 'evaluator.html?rater=1'; return; }
   try { sessionStorage.removeItem('jumpCase'); } catch (e) {}
   if (!id) return;
+  if (myRequests.some(x => String(x.id) === String(id)) || myDrafts.some(x => String(x.id) === String(id))) { openDraft(id); return; }   // 評価依頼・進行中の症例は、入力画面へ
   const r = (allResults || []).find(x => String(x.id) === String(id));
   if (!r) return;   // 自分の症例でない／まだ評価前の場合は何もしない
   switchTab('results');
   openResult(r);
 }
 
+const daysAgo_ = iso => { const t = new Date(iso).getTime(); return isNaN(t) ? '' : Math.max(0, Math.floor((Date.now() - t) / 86400000)); };
+
 function renderCaseList() {
   const c = document.getElementById('formContainer');
-  const draftsHtml = myDrafts.length ? myDrafts.map(d => `
-    <div class="result-card" onclick="openDraft('${d.id}')">
-      <div class="rc-top">
-        <span class="rc-name">${d.procedure}<span class="badge-goal">症例No.${d.caseNo}</span></span>
-        <span class="badge-draft">進行中</span>
-      </div>
-      <div class="rc-meta">指導医: ${d.evaluatorName || '(不明)'}　|　${d.surgeryDate ? '手術日: ' + fmtSD(d.surgeryDate) : '開始日: ' + (fmtDate(d.createdAt) || '不明')}${d.preOpGoal ? '　🎯 術前目標あり' : ''}</div>
-    </div>`).join('') : '';
+  const meta = d => `指導医: ${d.evaluatorName || '(不明)'}　|　${d.surgeryDate ? '手術日: ' + fmtSD(d.surgeryDate) : '開始日: ' + (fmtDate(d.createdAt) || '不明')}`;
 
-  const requestBanner = ratingRequests.length ? `
-    <div class="card" style="background:#fffbea;border:1.5px solid #f6d860;margin-bottom:14px">
-      <div class="card-title">評価依頼があります（${ratingRequests.length}件）</div>
-      <p style="font-size:13px;color:#555;margin-bottom:12px;line-height:1.6">指導者から、自己評価に対する評価を依頼されています。評価項目のみの入力で、自由記述はありません。</p>
-      <button class="submit-btn" onclick="location.href='evaluator.html?rater=1'+(sessionStorage.getItem('perform_demo')==='1'?'&demo=1':'')">評価を入力する</button>
+  // (2) 評価依頼：指導医が先に評価を入力した症例（赤）＋ 指導者の自己評価への評価依頼（黄）
+  const reqCards = myRequests.map(d => { const n = daysAgo_(d.eSentAt); return `
+    <div class="req-card" onclick="openDraft('${d.id}')">
+      <div class="rc-top"><span class="rc-name">${d.procedure}<span class="badge-goal">症例No.${d.caseNo}</span></span></div>
+      <div style="margin-bottom:6px"><span class="req-tag">指導医が評価を入力済み</span>${d.hasContent ? '<span class="req-tag saved">一時保存中</span>' : ''}</div>
+      <div class="rc-meta">${meta(d)}${d.eSentAt ? '　|　評価入力: ' + fmtDate(d.eSentAt) + (n !== '' ? '（' + n + '日前）' : '') : ''}</div>
+      <button class="req-go">自己評価を入力する</button>
+    </div>`; }).join('');
+  const otherCards = ratingRequests.map(x => `
+    <div class="req-card other" onclick="location.href='evaluator.html?rater=1'+(sessionStorage.getItem('perform_demo')==='1'?'&demo=1':'')">
+      <div class="rc-top"><span class="rc-name">${x.procedure}<span class="badge-goal">症例No.${x.caseNo}</span></span></div>
+      <div style="margin-bottom:6px"><span class="req-tag other">指導者の自己評価への評価依頼</span></div>
+      <div class="rc-meta">指導者: ${x.learnerName || '(不明)'}　|　評価項目のみ（自由記述なし）</div>
+      <button class="req-go other">評価を入力する</button>
+    </div>`).join('');
+  const nReq = myRequests.length + ratingRequests.length;
+  const reqBox = nReq ? `
+    <div class="req-box">
+      <div class="req-box-title">📨 評価依頼 <span class="cnt">${nReq}</span></div>
+      <div class="req-box-sub">${myRequests.length ? '指導医が先に評価を入力した症例です。あなたの自己評価を提出すると、指導医の評価と比べて確認できます。<br>' : ''}${ratingRequests.length ? '黄色は、指導者の自己評価に対する評価依頼です。' : ''}</div>
+      ${reqCards}${otherCards}
     </div>` : '';
+
+  // (3) 進行中：目標のみ／一時保存中
+  const progCards = myDrafts.map(d => {
+    const goalOnly = !d.hasContent && d.goalEntryMode === 'preop';
+    const kind = goalOnly ? 'goal' : (d.hasContent ? 'saved' : 'goal');
+    return `
+    <div class="prog-card ${kind === 'saved' ? 'saved' : ''}" onclick="openDraft('${d.id}')">
+      <div class="rc-top"><span class="rc-name">${d.procedure}<span class="badge-goal">症例No.${d.caseNo}</span></span></div>
+      <div style="margin-bottom:6px">${kind === 'saved' ? '<span class="prog-tag saved">一時保存中（自己評価が未完了）</span>' : '<span class="prog-tag">術前目標のみ（術後に評価）</span>'}</div>
+      <div class="rc-meta">${meta(d)}${d.preOpGoal ? '　🎯 術前目標あり' : ''}</div>
+      <button class="prog-go ${kind === 'saved' ? 'saved' : ''}">${kind === 'saved' ? '続きを入力する' : '術後の評価を入力する'}</button>
+    </div>`; }).join('');
+
   c.innerHTML = `
-    ${requestBanner}
-    ${myDrafts.length ? `<div class="section-label">進行中の症例（${myDrafts.length}件）</div>${draftsHtml}` : ''}
-    <div class="section-label">新しい症例</div>
-    <div class="card" style="text-align:center">
-      <p style="font-size:13px;color:#777;margin-bottom:14px;line-height:1.6">術前に目標だけ入力しておく、または術後に評価まで一気に入力する、どちらの流れでも始められます。</p>
-      <button class="submit-btn" onclick="renderStartCase()">＋ 新しい症例を開始する</button>
-    </div>`;
+    <button class="new-start-btn" onclick="renderStartCase()">＋ 新しい症例を始める</button>
+    <div class="new-start-sub">術前に目標だけ入力する／術後に評価まで一気に入力する、どちらでも始められます</div>
+    ${reqBox}
+    ${myDrafts.length ? `<div class="section-label">進行中の症例（${myDrafts.length}件）</div>${progCards}` : ''}`;
 }
 
 function updateRaterNote() {
@@ -962,6 +1028,14 @@ async function startCaseAction(goalOnly) {
   if (!evaluatorId) { alert(SELF_MODE ? '評価者を選択してください' : '担当指導医を選択してください'); return; }
   if (!surgeryDate) { alert('手術日を入力してください'); return; }
 
+  // 同じ指導医・同じ手術日の症例がすでにあれば、重複を防ぐために確認する（止めはしない）
+  if (!window.__dupSkip) {
+    const cands = [...myRequests.map(d => Object.assign({ _k: 'req' }, d)), ...myDrafts.map(d => Object.assign({ _k: d.hasContent ? 'saved' : 'goal' }, d))]
+      .filter(d => String(d.evaluatorId) === String(evaluatorId) && d.surgeryDate === surgeryDate);
+    if (cands.length) { window.__dupGoalOnly = goalOnly; showDup(cands); return; }
+  }
+  window.__dupSkip = false;
+
   // 評価フォームへ進んでから送信するまでの間、選択内容を保持しておく（NCDコードは
   // 学習者・評価者の画面には一切表示しない。裏でバックエンドへ送るためだけに保持する）
   window.__freshProcedure = proc.text;
@@ -985,10 +1059,26 @@ async function startCaseAction(goalOnly) {
   }
 }
 
+const DUP_ST = { req: '指導医が評価を入力済み（あなたの自己評価待ち）', saved: '一時保存中（自己評価が未完了）', goal: '術前目標のみ入力済み（術後に評価）' };
+function showDup(cands) {
+  document.getElementById('dupBody').innerHTML =
+    `<div style="font-size:13.5px;color:#444;line-height:1.7;margin-bottom:12px">同じ指導医・同じ手術日の症例がすでにあります。<b>同じ手術</b>であれば、新しく作らず、その症例を使ってください（重複を防げます）。</div>` +
+    cands.map(c => `<div class="dup-row"><b>${c.procedure}</b>　<span style="color:#999;font-size:12px">症例No.${c.caseNo}</span>
+      <div class="dup-st">${DUP_ST[c._k]}</div>
+      <button class="dup-btn" onclick="useDup('${c.id}')">${c._k === 'req' ? 'この症例に自己評価を入力する' : 'この症例の続きを入力する'}</button></div>`).join('') +
+    `<button class="dup-btn alt" onclick="newAnyway()">別の手術として、新しく始める</button>
+     <p class="hint" style="margin:10px 0 0">同じ日に同じ指導医の手術が複数ある場合は「別の手術として」を選んでください。後で重複と分かった場合は、事務局が統合できます。</p>`;
+  document.getElementById('dupModal').classList.add('show');
+}
+function closeDup() { document.getElementById('dupModal').classList.remove('show'); }
+function useDup(id) { closeDup(); openDraft(id); }
+function newAnyway() { closeDup(); window.__dupSkip = true; startCaseAction(!!window.__dupGoalOnly); }
+
 async function openDraft(draftId) {
-  const d = myDrafts.find(x => String(x.id) === String(draftId));
+  const d = myDrafts.find(x => String(x.id) === String(draftId)) || myRequests.find(x => String(x.id) === String(draftId));
   if (!d) return;
   renderEvalForm(d, null);
+  window.scrollTo(0, 0);
 }
 
 // -------------------------------------------------------
@@ -1002,6 +1092,7 @@ function renderEvalForm(draft, fresh) {
   const evaluatorName = draft ? draft.evaluatorName : (evaluatorsCache.find(e=>e.userId===evaluatorId)||{}).name || '';
   const existingGoal = draft ? draft.preOpGoal : fresh.goal;
   const goalIsPreop = draft && draft.goalEntryMode === 'preop';
+  const isReq = !!(draft && draft._req);   // 指導医が先に評価を入力済みの症例
 
   c.innerHTML = `
     <button class="text-link-btn" onclick="renderCaseList()">‹ 症例一覧に戻る</button>
@@ -1016,13 +1107,13 @@ function renderEvalForm(draft, fresh) {
       <label style="margin-top:12px">手術日 <span class="required">*</span></label>
       <input type="date" id="evalSurgeryDate" value="${(draft ? draft.surgeryDate : fresh.surgeryDate) || ''}" max="${todayStr()}">
     </div>
-    <div class="card">
+    ${isReq ? `<div class="req-notice">📨 <b>指導医が評価を入力済みです。</b>あなたの自己評価を提出するまで、指導医の評価は表示されません。提出すると、結果の画面で比べて確認できます。</div>` : `<div class="card">
       <div class="card-title">術前目標${goalIsPreop ? '<span class="goal-mode-tag">術前に設定済み</span>' : ''}</div>
       ${goalIsPreop
         ? `<div class="goal-box"><div class="goal-text">${existingGoal}</div></div>`
         : `<p class="hint">未入力でも送信できます。入力した場合、指導医への個別通知はされません（評価送信の通知のみ届きます）。</p>
            <textarea id="goalField" placeholder="例：クリッピングの手技を安定させたい">${existingGoal||''}</textarea>`}
-    </div>
+    </div>`}
     <div class="card">
       <div class="card-title">自律度 <small style="font-weight:400;color:#999;font-size:11px">Autonomy</small></div>
       <div class="radio-group">${[['1','見学中心'],['2','補助を受けながら執刀'],['3','主体的に執刀'],['4','ほぼ単独で執刀']].map(([v,l])=>`<label class="radio-opt"><input type="radio" name="autonomy" value="${v}" ${draft&&String(draft.autonomy)===v?'checked':''}><span class="opt-box"><span class="opt-num">${v}</span><span class="opt-jp">${l}</span></span></label>`).join('')}</div>
@@ -1054,6 +1145,7 @@ function renderEvalForm(draft, fresh) {
       <textarea id="fbGood" placeholder="うまくできたこと、意識してよかった点など">${draft&&draft.feedbackGood?draft.feedbackGood:''}</textarea>
       <label>② 次回の目標・改善点</label>
       <textarea id="fbGoal" placeholder="次回に向けて意識したいこと、課題など">${draft&&draft.feedbackGoal?draft.feedbackGoal:''}</textarea>
+      ${SELF_MODE ? '' : '<div class="transp-note">※ 指導医が、振り返りや次回の目標の質を、あなたには表示しない形で評価することがあります。</div>'}
     </div>
     <div class="btn-row">
       <button class="submit-btn secondary" id="draftBtn" onclick='saveEvalDraft(${draft ? `"${draft.id}"` : 'null'})'>
@@ -1062,7 +1154,7 @@ function renderEvalForm(draft, fresh) {
       </button>
     </div>
     <button class="submit-btn" id="submitBtn" onclick='submitForm(${draft ? `"${draft.id}"` : 'null'})'>
-      <span id="submitLabel">指導医へ送信する</span>
+      <span id="submitLabel">${isReq ? '自己評価を提出する' : '指導医へ送信する'}</span>
       <div class="spinner" id="submitSpinner"></div>
     </button>`;
 }
@@ -1126,6 +1218,7 @@ async function submitForm(recordId) {
   const feedbackGood = document.getElementById('fbGood').value.trim();
   const feedbackGoal = document.getElementById('fbGoal').value.trim();
 
+  window.__submitLabel = (document.getElementById('submitLabel') || {}).textContent;
   document.getElementById('submitBtn').disabled = true;
   document.getElementById('submitSpinner').style.display = 'block';
   document.getElementById('submitLabel').textContent = '送信中...';
@@ -1142,16 +1235,19 @@ async function submitForm(recordId) {
     }
     const res = await gasCall(payload);
     if (!res.success) { alert('エラー: '+res.error); return; }
-    document.getElementById('successTitle').textContent = '送信完了';
-    document.getElementById('successMsg').innerHTML = `症例No. <strong>${res.caseNo||''}</strong> の評価を送信しました。<br>指導医にメールで通知されました。評価が完了したらお知らせします。`;
+    window.__completed = !!res.completed;
+    document.getElementById('successTitle').textContent = res.completed ? '自己評価を提出しました' : '送信完了';
+    document.getElementById('successMsg').innerHTML = res.completed
+      ? `症例No. <strong>${res.caseNo||''}</strong> の自己評価を提出しました。<br>指導医の評価と比べて、結果の画面で確認できます。指導医にも完了のお知らせが届きました。`
+      : `症例No. <strong>${res.caseNo||''}</strong> の評価を送信しました。<br>指導医にメールで通知されました。評価が完了したらお知らせします。`;
     document.getElementById('successOverlay').classList.add('show');
   } catch { alert('接続エラーが発生しました。再度お試しください。'); }
   finally {
     const btn = document.getElementById('submitBtn');
-    if (btn) { btn.disabled = false; document.getElementById('submitSpinner').style.display = 'none'; document.getElementById('submitLabel').textContent = '指導医へ送信する'; }
+    if (btn) { btn.disabled = false; document.getElementById('submitSpinner').style.display = 'none'; document.getElementById('submitLabel').textContent = window.__submitLabel || '指導医へ送信する'; }
   }
 }
-function afterSubmit() { document.getElementById('successOverlay').classList.remove('show'); resultsLoaded = false; initForm(); }
+function afterSubmit() { document.getElementById('successOverlay').classList.remove('show'); resultsLoaded = false; initForm(); if (window.__completed) { window.__completed = false; switchTab('results'); } }
 
 // -------------------------------------------------------
 // 結果データ（共有）
