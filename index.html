@@ -207,7 +207,7 @@ async function doLogin() {
 
   setLoading(true);
   try {
-    const res = await gasCall({ action: 'login', facilityCode, name, pin });
+    const res = await gasCall({ action: 'login', facilityCode, name, pin, role: currentRole });
     if (!res.success) { showError(res.error || 'ログイン失敗'); return; }
     // 管理者は「指導医」側のログイン画面から入る（施設コード ADMIN）
     const adminOk = res.role === 'admin' && currentRole === 'evaluator';
