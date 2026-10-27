@@ -204,6 +204,8 @@ let D = null;                       // サーバーから取得した全デー�
 let caseById = {}, activeTab = 'fac';
 const sortState = { fac: null, usr: null, case: null, stall: null };
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// 学習者先行の症例で、指導医が学習者の自由記載を見てから評価したか（見てから／見ずに）。対象外は空欄
+function viewedL(c) { return c.viewedL === 'before' ? '見てから' : (c.viewedL === 'none' ? '見ずに' : ''); }
 const STJ = { draft: '下書き', e_draft: '指導医入力中', pending: '評価待ち', e_sent: '学習者の自己評価待ち', reviewed: '評価完了', merged: '統合済み' };
 const WHO = { learner: '学習者', evaluator: '指導医' };
 const WAIT_J = { learner_self: '学習者の自己評価待ち（指導医が先に評価済み）', evaluator_eval: '指導医の評価待ち（学習者が提出済み）', evaluator_draft: '指導医が入力途中のまま', learner_draft: '学習者が一時保存のまま', goal_after: '術前目標のみ・手術日を過ぎても評価が未入力', goal_before: '術前目標のみ（手術前）' };
@@ -380,6 +382,7 @@ const CASE_COLS = [
   { h: '学習者コメント', v: c => (c.fbGoodL || c.fbGoalL) ? '○' : '' },
   { h: '指導医コメント', v: c => (c.fbGoodE || c.fbGoalE) ? '○' : '' },
   { h: '★術前目標(指導医)', n: 1, v: c => c.rateGoalE }, { h: '★振り返り(指導医)', n: 1, v: c => c.rateGoodE }, { h: '★次回の目標(指導医)', n: 1, v: c => c.rateNextE },
+  { h: '学習者コメント表示', v: c => viewedL(c) },
   { h: '統合', v: c => c.mergeRef || '' },
   { h: 'ディスカッション', n: 1, v: c => c.discussionN },
   { h: 'P(学習者)', n: 1, v: c => c.perfL }, { h: 'P(指導医)', n: 1, v: c => c.perfE },
@@ -623,9 +626,9 @@ function csv(t) {
   } else {
     const H = ['症例ID','種別','施設コード','施設名','症例No.','術式','学習者(匿名)','指導医(匿名)','状態','作成日','提出日','評価日','術前目標',
       '自律度(学習者)','パフォーマンス(学習者)','難易度(学習者)','TS1(学習者)','TS2(学習者)','TS3(学習者)','TS4(学習者)','TS5(学習者)','良かった点(学習者)','次回の目標・改善点(学習者)',
-      '自律度(指導医)','パフォーマンス(指導医)','難易度(指導医)','TS1(指導医)','TS2(指導医)','TS3(指導医)','TS4(指導医)','TS5(指導医)','良かった点(指導医)','次回の目標・改善点(指導医)','ディスカッション件数','提出→評価(日)','リマインド送信','リマインド→評価(日)','コメント評価(★)','コメント評価日時','評価完了→コメント評価(日)','結果を閲覧','起点','最初の評価','術前目標(術前に入力=1)','最初の評価→もう一方(日)','★術前目標(指導医)','★振り返り(指導医)','★次回の目標(指導医)','統合'];
+      '自律度(指導医)','パフォーマンス(指導医)','難易度(指導医)','TS1(指導医)','TS2(指導医)','TS3(指導医)','TS4(指導医)','TS5(指導医)','良かった点(指導医)','次回の目標・改善点(指導医)','ディスカッション件数','提出→評価(日)','リマインド送信','リマインド→評価(日)','コメント評価(★)','コメント評価日時','評価完了→コメント評価(日)','結果を閲覧','起点','最初の評価','術前目標(術前に入力=1)','最初の評価→もう一方(日)','★術前目標(指導医)','★振り返り(指導医)','★次回の目標(指導医)','学習者コメント表示','統合'];
     dl(`PERFORM_症例一覧_${stamp()}.csv`, [H].concat(caseFiltered().map(c => [c.id, CTJ[c.caseType || ''] || c.caseType, c.facilityCode, c.facilityName, c.caseNo, c.procedure, c.learnerLabel, c.evaluatorLabel, STJ[c.status] || c.status, c.createdAt, c.submittedAt, c.reviewedAt, c.preOpGoal,
-      c.autoL, c.perfL, c.diffL, c.ts1L, c.ts2L, c.ts3L, c.ts4L, c.ts5L, c.fbGoodL, c.fbGoalL, c.autoE, c.perfE, c.diffE, c.ts1E, c.ts2E, c.ts3E, c.ts4E, c.ts5E, c.fbGoodE, c.fbGoalE, c.discussionN, c.submitToReviewDays, c.reminderSentAt, c.reminderToReviewDays, c.commentRating, c.commentRatedAt, c.reviewToRatingDays, c.feedbackViewed ? 1 : 0, c.caseType ? '' : (WHO[c.initiatedBy] || ''), c.caseType ? '' : (WHO[c.firstEvalBy] || ''), c.caseType ? '' : (c.goalPreop ? 1 : 0), c.lagDays, c.rateGoalE, c.rateGoodE, c.rateNextE, c.mergeRef])));
+      c.autoL, c.perfL, c.diffL, c.ts1L, c.ts2L, c.ts3L, c.ts4L, c.ts5L, c.fbGoodL, c.fbGoalL, c.autoE, c.perfE, c.diffE, c.ts1E, c.ts2E, c.ts3E, c.ts4E, c.ts5E, c.fbGoodE, c.fbGoalE, c.discussionN, c.submitToReviewDays, c.reminderSentAt, c.reminderToReviewDays, c.commentRating, c.commentRatedAt, c.reviewToRatingDays, c.feedbackViewed ? 1 : 0, c.caseType ? '' : (WHO[c.initiatedBy] || ''), c.caseType ? '' : (WHO[c.firstEvalBy] || ''), c.caseType ? '' : (c.goalPreop ? 1 : 0), c.lagDays, c.rateGoalE, c.rateGoodE, c.rateNextE, viewedL(c), c.mergeRef])));
   }
 }
 load();

@@ -91,6 +91,10 @@
   .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
   .info-item label { font-size: 11px; color: #999; font-weight: 700; text-transform: uppercase; margin-bottom: 2px; }
   .info-item span  { font-size: 14px; color: #222; font-weight: 600; }
+  .reveal-box { background: #f7fafc; border: 1px dashed #cbd5e0; border-radius: 8px; padding: 11px 14px; margin: -6px 0 16px; font-size: 12.5px; color: #4a5568; line-height: 1.6; }
+  .reveal-btn { margin: 8px 0 4px; padding: 8px 14px; border: 1.5px solid #2c5282; background: #fff; color: #2c5282; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; font-family: inherit; }
+  .reveal-btn:disabled { opacity: .5; }
+  .reveal-note { font-size: 11px; color: #718096; }
   .blind-notice { background: #fffaf0; border-left: 3px solid #f6ad55; padding: 11px 14px; border-radius: 0 8px 8px 0; color: #92400e; font-size: 13px; margin-bottom: 16px; line-height: 1.6; }
   .reviewed-box { background: #f0faf4; border-left: 3px solid #68d391; padding: 11px 14px; border-radius: 0 8px 8px 0; color: #276749; font-size: 13px; margin-bottom: 16px; }
 
@@ -452,13 +456,16 @@ function mockGasCall(data) {
       resolve({ success:true, id, caseNo:'00' + MOCK_RECORDS.length });
     } else if (data.action === 'saveEvaluatorDraft') {
       resolve({ success:true });
+    } else if (data.action === 'revealLearnerComments') {
+      const rec = MOCK_RECORDS.find(r => r.id === data.recordId);
+      resolve(rec && rec.status === 'pending' ? { success:true, learnerFeedbackGood: rec.learnerFeedbackGood || '', learnerFeedbackGoal: rec.learnerFeedbackGoal || '' } : { success:false, error:'表示できません' });
     } else if (data.action === 'rateLearnerComments') {
       const rec = MOCK_RECORDS.find(r => r.id === data.recordId);
       if (rec) { rec.myRatings = rec.myRatings || {}; ['goal','good','next'].forEach(k => { if (data[k] !== undefined) rec.myRatings[k] = data[k]; }); }
       resolve({ success:true });
     } else if (data.action === 'getRecord') {
       const rec = MOCK_VIEW().find(r => r.id === data.recordId);
-      resolve(rec ? { success:true, record: {...rec, canEditEvaluatorComment: rec.canEditEvaluatorComment !== false, learnerSubmitted: rec.status === 'pending' || rec.status === 'reviewed', evaluatorSubmitted: rec.status === 'e_sent' || rec.status === 'reviewed'} } : { success:false, error:'Not found' });
+      resolve(rec ? { success:true, record: {...rec, canEditEvaluatorComment: rec.canEditEvaluatorComment !== false, canRevealLearnerComments: rec.status === 'pending' && !rec.caseType, learnerSubmitted: rec.status === 'pending' || rec.status === 'reviewed', evaluatorSubmitted: rec.status === 'e_sent' || rec.status === 'reviewed'} } : { success:false, error:'Not found' });
     } else if (data.action === 'submitEvaluator') {
       const rec = MOCK_RECORDS.find(r => r.id === data.recordId);
       let status = 'reviewed';
@@ -966,7 +973,13 @@ function renderEvalForm(r) {
       ? `<div class="reviewed-box" style="background:#ebf8ff;border-color:#bee3f8;color:#2c5282">📨 評価を送信済みです。${W}の自己評価待ちです。${W}が自己評価を提出すると、結果で比較を確認できます（それまで、あなたの評価は${W}に表示されません）。${canEditC ? '（コメントは送信後72時間以内のため編集できます）' : ''}</div>`
       : evalFirst
       ? `<div class="blind-notice" style="background:#f0f7ff;border-color:#bee3f8;color:#2c5282">ℹ️ <strong>先に評価を入力します</strong><br>${W}の自己評価はまだありません。送信すると${W}に自己評価の依頼が届き、${W}が自己評価を提出するまで、あなたの評価は${W}に表示されません。</div>`
-      : `<div class="blind-notice">⚠️ <strong>ブラインド評価モード</strong><br>${W}の自己評価は評価完了まで非表示です。独立した評価を入力してください。</div>`}
+      : `<div class="blind-notice">⚠️ <strong>ブラインド評価モード</strong><br>${W}の自己評価は評価完了まで非表示です。独立した評価を入力してください。</div>
+      ${r.canRevealLearnerComments ? `<div class="reveal-box" id="revealBox">
+        <div class="reveal-txt">学習者の自由記載（良かった点・次回の目標）は、初期状態では非表示です。見ずに入力しても、見てから入力しても構いません。</div>
+        <button type="button" class="reveal-btn" id="revealBtn" onclick="revealLearnerComments()">👁 学習者の自由記載を表示する</button>
+        <div class="reveal-note">※ 表示したかどうかは、研究のため記録されます（評価内容の良し悪しには影響しません）。</div>
+        <div id="revealBody" style="display:none"></div>
+      </div>` : ''}`}
 
     <div class="info-grid">
       <div class="info-item"><label>症例No.</label><span>${r.caseNo}</span></div>
@@ -1032,6 +1045,26 @@ function renderEvalForm(r) {
     </button>
     <div class="edit-window-note">※ コメント送信から72時間以内のみ編集できます</div>` : '')}
   `;
+}
+
+async function revealLearnerComments() {
+  const btn = document.getElementById('revealBtn'), body = document.getElementById('revealBody');
+  if (!btn || !body || !currentRecordId) return;
+  btn.disabled = true;
+  try {
+    const res = await gasCall({ action: 'revealLearnerComments', facilityCode, userId, pin, recordId: currentRecordId });
+    if (!res.success) throw new Error(res.error || '');
+    const W = rateeWord(currentRecord || {});
+    body.innerHTML = '';
+    [['fb-mini-good', W + '：① 良かった点', res.learnerFeedbackGood], ['fb-mini-goal', W + '：② 次回の目標', res.learnerFeedbackGoal]].forEach(([c, t, v]) => {
+      const l = document.createElement('div'); l.className = 'fb-mini-label ' + c; l.textContent = t;
+      const b = document.createElement('div'); b.className = 'fb-box-l'; b.textContent = v || '（記載なし）';
+      body.appendChild(l); body.appendChild(b);
+    });
+    body.style.display = 'block'; btn.style.display = 'none';
+  } catch (e) {
+    btn.disabled = false; showToast('表示できませんでした：' + (e.message || '接続エラー'));
+  }
 }
 
 function getRadio(name) {
