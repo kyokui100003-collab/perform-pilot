@@ -91,7 +91,7 @@
   .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
   .info-item label { font-size: 11px; color: #999; font-weight: 700; text-transform: uppercase; margin-bottom: 2px; }
   .info-item span  { font-size: 14px; color: #222; font-weight: 600; }
-  .reveal-box { background: #f7fafc; border: 1px dashed #cbd5e0; border-radius: 8px; padding: 11px 14px; margin: -6px 0 16px; font-size: 12.5px; color: #4a5568; line-height: 1.6; }
+  .reveal-box { background: #f7fafc; border: 1px dashed #cbd5e0; border-radius: 8px; padding: 11px 14px; margin: 0 0 14px; font-size: 12.5px; color: #4a5568; line-height: 1.6; }
   .reveal-btn { margin: 8px 0 4px; padding: 8px 14px; border: 1.5px solid #2c5282; background: #fff; color: #2c5282; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; font-family: inherit; }
   .reveal-btn:disabled { opacity: .5; }
   .reveal-note { font-size: 11px; color: #718096; }
@@ -949,6 +949,12 @@ async function openEvalModal(id, pre) {
 }
 
 function renderEvalForm(r) {
+  const revealHtml = r.canRevealLearnerComments ? `<div class="reveal-box" id="revealBox">
+        <div class="reveal-txt">学習者の自由記載（良かった点・次回の目標）は、初期状態では非表示です。見ずに入力しても、見てから入力しても構いません。</div>
+        <button type="button" class="reveal-btn" id="revealBtn" onclick="revealLearnerComments()">👁 学習者の自由記載を表示する</button>
+        <div class="reveal-note">※ 表示したかどうかは、研究のため記録されます（評価内容の良し悪しには影響しません）。</div>
+        <div id="revealBody" style="display:none"></div>
+      </div>` : '';
   const isReviewed = r.status === 'reviewed';
   const isSent = r.status === 'e_sent';                    // 先に評価を送信済み（学習者の自己評価待ち）
   const evalFirst = !isReviewed && r.status !== 'pending'; // 学習者の自己評価より先に評価を入力する症例
@@ -973,13 +979,7 @@ function renderEvalForm(r) {
       ? `<div class="reviewed-box" style="background:#ebf8ff;border-color:#bee3f8;color:#2c5282">📨 評価を送信済みです。${W}の自己評価待ちです。${W}が自己評価を提出すると、結果で比較を確認できます（それまで、あなたの評価は${W}に表示されません）。${canEditC ? '（コメントは送信後72時間以内のため編集できます）' : ''}</div>`
       : evalFirst
       ? `<div class="blind-notice" style="background:#f0f7ff;border-color:#bee3f8;color:#2c5282">ℹ️ <strong>先に評価を入力します</strong><br>${W}の自己評価はまだありません。送信すると${W}に自己評価の依頼が届き、${W}が自己評価を提出するまで、あなたの評価は${W}に表示されません。</div>`
-      : `<div class="blind-notice">⚠️ <strong>ブラインド評価モード</strong><br>${W}の自己評価は評価完了まで非表示です。独立した評価を入力してください。</div>
-      ${r.canRevealLearnerComments ? `<div class="reveal-box" id="revealBox">
-        <div class="reveal-txt">学習者の自由記載（良かった点・次回の目標）は、初期状態では非表示です。見ずに入力しても、見てから入力しても構いません。</div>
-        <button type="button" class="reveal-btn" id="revealBtn" onclick="revealLearnerComments()">👁 学習者の自由記載を表示する</button>
-        <div class="reveal-note">※ 表示したかどうかは、研究のため記録されます（評価内容の良し悪しには影響しません）。</div>
-        <div id="revealBody" style="display:none"></div>
-      </div>` : ''}`}
+      : `<div class="blind-notice">⚠️ <strong>ブラインド評価モード</strong><br>${W}の自己評価は評価完了まで非表示です。独立した評価を入力してください。</div>`}
 
     <div class="info-grid">
       <div class="info-item"><label>症例No.</label><span>${r.caseNo}</span></div>
@@ -1023,6 +1023,7 @@ function renderEvalForm(r) {
     ${up ? `<div class="sec-hdr">フィードバック</div>
     <div class="blind-notice" style="background:#f0f7ff;border-color:#bee3f8;color:#2c5282">指導者の自己評価では、学習者が評価者の場合、自由記述（コメント）はありません。上の評価項目だけで送信できます。</div>
     <div style="display:none"><textarea id="fbGoodE"></textarea><textarea id="fbGoalE"></textarea></div>` : `<div class="sec-hdr">フィードバック</div>
+    ${revealHtml}
     <label>① 良かった点</label>
     <textarea id="fbGoodE" ${!editable?'readonly':''} placeholder="うまくできていた点など">${r.evaluatorFeedbackGood||''}</textarea>
     <label>② 次回の目標・改善点</label>
